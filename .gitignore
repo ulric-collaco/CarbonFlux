@@ -1,0 +1,4 @@
+# Local agent skills and metadata
+.agents/
+skills-lock.json
+.gradle-home/
