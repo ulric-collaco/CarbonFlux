@@ -36,6 +36,7 @@ class PpmLineChart extends StatelessWidget {
         maxX: maxX,
         minY: 0,
         maxY: _maxY(readings),
+        clipData: const FlClipData.all(),
         lineTouchData: const LineTouchData(enabled: true),
         gridData: FlGridData(
           show: true,
@@ -54,7 +55,7 @@ class PpmLineChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 42,
+              reservedSize: 48,
               interval: 250,
               getTitlesWidget: (value, _) => Text(
                 value.toInt().toString(),
@@ -128,6 +129,6 @@ class PpmLineChart extends StatelessWidget {
       1000,
       (prev, e) => e.ppmProxy > prev ? e.ppmProxy : prev,
     );
-    return (peak + 200).clamp(800, 5000).toDouble();
+    return (peak + 200).clamp(1200.0, double.infinity);
   }
 }

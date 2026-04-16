@@ -71,242 +71,263 @@ class DashboardScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            if (state.errorMessage != null) ...[
-              ErrorBanner(
-                message: state.errorMessage!,
-                onDismiss: controller.clearError,
-              ),
-              const SizedBox(height: 12),
-            ],
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF111722),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF1F2A3A)),
-              ),
-              padding: const EdgeInsets.all(16),
-              child: Wrap(
-                runSpacing: 16,
-                spacing: 18,
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 800),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        status?.deviceId ?? latest?.deviceId ?? 'carbonflux-001',
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        state.statusMessage,
-                        style: const TextStyle(color: Color(0xFF90A0B9)),
-                      ),
-                    ],
-                  ),
-                  StateBadge(state: currentState),
-                  if (currentState == 'WARMUP')
-                    _MetricChip(
-                      label: 'WARMUP',
-                      value: '${state.warmupRemainingSeconds}s',
-                      color: Colors.amberAccent,
+                  if (state.errorMessage != null) ...[
+                    ErrorBanner(
+                      message: state.errorMessage!,
+                      onDismiss: controller.clearError,
                     ),
-                  if (currentState == 'DETECTING' || currentState == 'STOPPED')
-                    _MetricChip(
-                      label: 'READINGS',
-                      value: state.streamReadings.isNotEmpty
-                          ? state.streamReadings.length.toString()
-                          : state.readingHistory.length.toString(),
-                      color: Colors.cyanAccent,
+                    const SizedBox(height: 12),
+                  ],
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111722),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF1F2A3A)),
                     ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: (state.isCommandInFlight ||
-                            state.isDetectionCycleRunning)
-                        ? null
-                        : () => _runDetectionCycle(context, controller, state),
-                    icon: state.isDetectionCycleRunning
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.play_circle_outline_rounded),
-                    label: Text(
-                      state.isDetectionCycleRunning
-                          ? 'Running 15s Detection Cycle...'
-                          : 'Start Detection',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Last warmup: ${_lastWarmupLabel(state.lastWarmupCompletedAt)}',
-              style: const TextStyle(color: Color(0xFF90A0B9), fontSize: 12),
-            ),
-            const SizedBox(height: 14),
-            if (latest != null) ReadingCard(reading: latest),
-            const SizedBox(height: 14),
-            Container(
-              height: 300,
-              decoration: BoxDecoration(
-                color: const Color(0xFF111722),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF1F2A3A)),
-              ),
-              padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'PPM Trend (Live)',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        currentState,
-                        style: TextStyle(color: stateColor(currentState)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Expanded(child: PpmLineChart(readings: state.readingHistory)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 14),
-            Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF111722),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF1F2A3A)),
-              ),
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Text(
-                        'Stream View',
-                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                      ),
-                      const Spacer(),
-                      TextButton.icon(
-                        onPressed: controller.refreshStream,
-                        icon: const Icon(Icons.refresh_rounded),
-                        label: const Text('Refresh'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _MetricChip(
-                        label: 'MAX PPM',
-                        value: analytics.maxPpm.toStringAsFixed(1),
-                        color: Colors.cyanAccent,
-                      ),
-                      _MetricChip(
-                        label: 'AVG PPM',
-                        value: analytics.avgPpm.toStringAsFixed(1),
-                        color: const Color(0xFF7CD4FF),
-                      ),
-                      _MetricChip(
-                        label: 'VIOLATIONS',
-                        value: analytics.violationCount.toString(),
-                        color: analytics.violationCount > 0
-                            ? Colors.redAccent
-                            : Colors.greenAccent,
-                      ),
-                      _MetricChip(
-                        label: 'LAST VIOLATION',
-                        value: analytics.lastViolationPpm == null
-                            ? 'none'
-                            : '${analytics.lastViolationPpm!.toStringAsFixed(1)} ppm',
-                        color: analytics.lastViolationPpm == null
-                            ? const Color(0xFF90A0B9)
-                            : Colors.redAccent,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  if (state.streamReadings.isEmpty)
-                    const Text(
-                      'No stream data loaded yet.',
-                      style: TextStyle(color: Color(0xFF90A0B9)),
-                    )
-                  else
-                    ...state.streamReadings.reversed.take(8).map((r) {
-                      final high = r.ppmProxy > _violationThresholdPpm;
-                      return ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        title: Row(
+                    padding: const EdgeInsets.all(16),
+                    child: Wrap(
+                      runSpacing: 16,
+                      spacing: 18,
+                      alignment: WrapAlignment.spaceBetween,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Text(
-                                'PPM ${r.ppmProxy.toStringAsFixed(1)} | ADC ${r.rawAdc}',
+                            Text(
+                              status?.deviceId ??
+                                  latest?.deviceId ??
+                                  'carbonflux-001',
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                            if (high)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.redAccent.withOpacity(0.18),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.redAccent.withOpacity(0.65),
-                                  ),
-                                ),
-                                child: const Text(
-                                  'VIOLATION',
-                                  style: TextStyle(
-                                    color: Colors.redAccent,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
+                            const SizedBox(height: 6),
+                            Text(
+                              state.statusMessage,
+                              style: const TextStyle(color: Color(0xFF90A0B9)),
+                            ),
                           ],
                         ),
-                        subtitle: Text('nonce ${r.nonce} | ts ${r.timestamp}'),
-                        trailing: high
-                            ? const Icon(Icons.warning_amber_rounded, color: Colors.redAccent)
-                            : const Icon(Icons.check_circle_outline, color: Colors.greenAccent),
-                      );
-                    }),
+                        StateBadge(state: currentState),
+                        if (currentState == 'WARMUP')
+                          _MetricChip(
+                            label: 'WARMUP',
+                            value: '${state.warmupRemainingSeconds}s',
+                            color: Colors.amberAccent,
+                          ),
+                        if (currentState == 'DETECTING' ||
+                            currentState == 'STOPPED')
+                          _MetricChip(
+                            label: 'READINGS',
+                            value: state.streamReadings.isNotEmpty
+                                ? state.streamReadings.length.toString()
+                                : state.readingHistory.length.toString(),
+                            color: Colors.cyanAccent,
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FilledButton.icon(
+                          onPressed: (state.isCommandInFlight ||
+                                  state.isDetectionCycleRunning)
+                              ? null
+                              : () => _runDetectionCycle(
+                                  context, controller, state),
+                          icon: state.isDetectionCycleRunning
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.play_circle_outline_rounded),
+                          label: Text(
+                            state.isDetectionCycleRunning
+                                ? 'Running 15s Detection Cycle...'
+                                : 'Start Detection',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Last warmup: ${_lastWarmupLabel(state.lastWarmupCompletedAt)}',
+                    style:
+                        const TextStyle(color: Color(0xFF90A0B9), fontSize: 12),
+                  ),
+                  const SizedBox(height: 14),
+                  if (latest != null) ReadingCard(reading: latest),
+                  const SizedBox(height: 14),
+                  Container(
+                    height: 300,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111722),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF1F2A3A)),
+                    ),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'PPM Trend (Live)',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              currentState,
+                              style: TextStyle(color: stateColor(currentState)),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Expanded(
+                            child:
+                                PpmLineChart(readings: state.readingHistory)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF111722),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF1F2A3A)),
+                    ),
+                    padding: const EdgeInsets.all(14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Stream View',
+                              style: TextStyle(
+                                  fontSize: 15, fontWeight: FontWeight.w700),
+                            ),
+                            const Spacer(),
+                            TextButton.icon(
+                              onPressed: controller.refreshStream,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Refresh'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: [
+                            _MetricChip(
+                              label: 'MAX PPM',
+                              value: analytics.maxPpm.toStringAsFixed(1),
+                              color: Colors.cyanAccent,
+                            ),
+                            _MetricChip(
+                              label: 'AVG PPM',
+                              value: analytics.avgPpm.toStringAsFixed(1),
+                              color: const Color(0xFF7CD4FF),
+                            ),
+                            _MetricChip(
+                              label: 'VIOLATIONS',
+                              value: analytics.violationCount.toString(),
+                              color: analytics.violationCount > 0
+                                  ? Colors.redAccent
+                                  : Colors.greenAccent,
+                            ),
+                            _MetricChip(
+                              label: 'LAST VIOLATION',
+                              value: analytics.lastViolationPpm == null
+                                  ? 'none'
+                                  : '${analytics.lastViolationPpm!.toStringAsFixed(1)} ppm',
+                              color: analytics.lastViolationPpm == null
+                                  ? const Color(0xFF90A0B9)
+                                  : Colors.redAccent,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        if (state.streamReadings.isEmpty)
+                          const Text(
+                            'No stream data loaded yet.',
+                            style: TextStyle(color: Color(0xFF90A0B9)),
+                          )
+                        else
+                          ...state.streamReadings.reversed.take(8).map((r) {
+                            final high = r.ppmProxy > _violationThresholdPpm;
+                            return ListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'PPM ${r.ppmProxy.toStringAsFixed(1)} | ADC ${r.rawAdc}',
+                                    ),
+                                  ),
+                                  if (high)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            Colors.redAccent.withOpacity(0.18),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.redAccent
+                                              .withOpacity(0.65),
+                                        ),
+                                      ),
+                                      child: const Text(
+                                        'VIOLATION',
+                                        style: TextStyle(
+                                          color: Colors.redAccent,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              subtitle:
+                                  Text('nonce ${r.nonce} | ts ${r.timestamp}'),
+                              trailing: high
+                                  ? const Icon(Icons.warning_amber_rounded,
+                                      color: Colors.redAccent)
+                                  : const Icon(Icons.check_circle_outline,
+                                      color: Colors.greenAccent),
+                            );
+                          }),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

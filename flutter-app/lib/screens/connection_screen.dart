@@ -40,68 +40,70 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
     return Scaffold(
       body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Icon(
-                  Icons.factory_outlined,
-                  size: 50,
-                  color: Color(0xFF32D9FF),
-                ),
-                const SizedBox(height: 18),
-                const Text(
-                  'CarbonFlux',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Industrial Emission Monitor',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF91A0B9), fontSize: 14),
-                ),
-                const SizedBox(height: 20),
-                SegmentedButton<ConnectionTransport>(
-                  segments: const [
-                    ButtonSegment<ConnectionTransport>(
-                      value: ConnectionTransport.wifi,
-                      icon: Icon(Icons.wifi_rounded),
-                      label: Text('WiFi'),
-                    ),
-                    ButtonSegment<ConnectionTransport>(
-                      value: ConnectionTransport.bluetooth,
-                      icon: Icon(Icons.bluetooth_rounded),
-                      label: Text('Bluetooth'),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 520),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(
+                    Icons.factory_outlined,
+                    size: 50,
+                    color: Color(0xFF32D9FF),
+                  ),
+                  const SizedBox(height: 18),
+                  const Text(
+                    'CarbonFlux',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Industrial Emission Monitor',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Color(0xFF91A0B9), fontSize: 14),
+                  ),
+                  const SizedBox(height: 20),
+                  SegmentedButton<ConnectionTransport>(
+                    segments: const [
+                      ButtonSegment<ConnectionTransport>(
+                        value: ConnectionTransport.wifi,
+                        icon: Icon(Icons.wifi_rounded),
+                        label: Text('WiFi'),
+                      ),
+                      ButtonSegment<ConnectionTransport>(
+                        value: ConnectionTransport.bluetooth,
+                        icon: Icon(Icons.bluetooth_rounded),
+                        label: Text('Bluetooth'),
+                      ),
+                    ],
+                    selected: {state.transport},
+                    onSelectionChanged: (selection) {
+                      final next = selection.first;
+                      controller.setTransport(next);
+                      if (next == ConnectionTransport.wifi) {
+                        _autoDiscoverWifi(force: true);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 18),
+                  if (state.transport == ConnectionTransport.wifi)
+                    _buildWifiSection(state, controller)
+                  else
+                    _buildBluetoothSection(state, controller),
+                  if (state.errorMessage != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      state.errorMessage!,
+                      style: const TextStyle(color: Colors.redAccent),
+                      textAlign: TextAlign.center,
                     ),
                   ],
-                  selected: {state.transport},
-                  onSelectionChanged: (selection) {
-                    final next = selection.first;
-                    controller.setTransport(next);
-                    if (next == ConnectionTransport.wifi) {
-                      _autoDiscoverWifi(force: true);
-                    }
-                  },
-                ),
-                const SizedBox(height: 18),
-                if (state.transport == ConnectionTransport.wifi)
-                  _buildWifiSection(state, controller)
-                else
-                  _buildBluetoothSection(state, controller),
-                if (state.errorMessage != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    state.errorMessage!,
-                    style: const TextStyle(color: Colors.redAccent),
-                    textAlign: TextAlign.center,
-                  ),
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -162,13 +164,15 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.wifi_tethering_rounded),
-          label: Text(state.isConnecting ? 'Connecting...' : 'Connect via WiFi'),
+          label:
+              Text(state.isConnecting ? 'Connecting...' : 'Connect via WiFi'),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: (state.isConnecting || state.isDiscoveringWifi)
               ? null
-              : () => controller.discoverWifiDevices(hintIp: _ipController.text),
+              : () =>
+                  controller.discoverWifiDevices(hintIp: _ipController.text),
           icon: state.isDiscoveringWifi
               ? const SizedBox(
                   width: 16,
@@ -177,9 +181,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 )
               : const Icon(Icons.travel_explore_rounded),
           label: Text(
-            state.isDiscoveringWifi
-                ? 'Scanning WiFi...'
-                : 'Find ESP32 on WiFi',
+            state.isDiscoveringWifi ? 'Scanning WiFi...' : 'Find ESP32 on WiFi',
           ),
         ),
         if (state.discoveredWifiDevices.isNotEmpty) ...[
@@ -205,7 +207,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     color: Color(0xFF32D9FF),
                   ),
                   title: Text(device.ip),
-                  subtitle: Text('${device.status.deviceId} • ${device.status.state}'),
+                  subtitle: Text(
+                      '${device.status.deviceId} • ${device.status.state}'),
                   trailing: TextButton(
                     onPressed: state.isConnecting
                         ? null
