@@ -36,7 +36,8 @@ class ReadingCard extends StatelessWidget {
             children: [
               _metric('PPM', ppm.toStringAsFixed(1), valueColor, large: true),
               _metric('RAW ADC', reading.rawAdc.toString(), Colors.white),
-              _metric('NONCE', reading.nonce.toString(), const Color(0xFFAAB6CA)),
+              _metric(
+                  'NONCE', reading.nonce.toString(), const Color(0xFFAAB6CA)),
               _metric(
                 'TIMESTAMP',
                 DateFormat('HH:mm:ss').format(
@@ -54,11 +55,13 @@ class ReadingCard extends StatelessWidget {
     );
   }
 
-  Widget _metric(String label, String value, Color color, {bool large = false}) {
+  Widget _metric(String label, String value, Color color,
+      {bool large = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6F7D95))),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6F7D95))),
         const SizedBox(height: 4),
         Text(
           value,

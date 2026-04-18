@@ -37,8 +37,28 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(carbonfluxControllerProvider);
     final controller = ref.read(carbonfluxControllerProvider.notifier);
+    final isMockMode = ref.watch(mockModeProvider);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          Row(
+            children: [
+              const Text('Mock Mode (Test)',
+                  style: TextStyle(color: Colors.amber, fontSize: 12)),
+              Switch(
+                value: isMockMode,
+                activeThumbColor: Colors.amber,
+                onChanged: (val) {
+                  ref.read(mockModeProvider.notifier).state = val;
+                },
+              ),
+            ],
+          ),
+        ],
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: ConstrainedBox(

@@ -28,7 +28,7 @@ class PpmLineChart extends StatelessWidget {
     final maxX = (spots.length - 1).toDouble();
     final minX = (spots.length > visibleCount)
         ? (spots.length - visibleCount).toDouble()
-      : 0.0;
+        : 0.0;
 
     return LineChart(
       LineChartData(
@@ -80,7 +80,7 @@ class PpmLineChart extends StatelessWidget {
         extraLinesData: ExtraLinesData(horizontalLines: [
           HorizontalLine(
             y: 1000,
-            color: Colors.redAccent.withOpacity(0.5),
+            color: Colors.redAccent.withValues(alpha: 0.5),
             strokeWidth: 1.3,
             dashArray: [6, 4],
             label: HorizontalLineLabel(
@@ -103,8 +103,8 @@ class PpmLineChart extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF32D9FF).withOpacity(0.35),
-                  const Color(0xFF32D9FF).withOpacity(0.05),
+                  const Color(0xFF32D9FF).withValues(alpha: 0.35),
+                  const Color(0xFF32D9FF).withValues(alpha: 0.05),
                 ],
               ),
             ),

@@ -30,14 +30,10 @@ class DiscoveredBluetoothDevice {
 }
 
 class Esp32BluetoothService {
-  static final Guid _serviceUuid =
-      Guid('6f4e0001-5f8a-4d8d-9f4f-3a7c8e3d1001');
-  static final Guid _statusUuid =
-      Guid('6f4e0002-5f8a-4d8d-9f4f-3a7c8e3d1001');
-  static final Guid _commandUuid =
-      Guid('6f4e0003-5f8a-4d8d-9f4f-3a7c8e3d1001');
-  static final Guid _readingUuid =
-      Guid('6f4e0004-5f8a-4d8d-9f4f-3a7c8e3d1001');
+  static final Guid _serviceUuid = Guid('6f4e0001-5f8a-4d8d-9f4f-3a7c8e3d1001');
+  static final Guid _statusUuid = Guid('6f4e0002-5f8a-4d8d-9f4f-3a7c8e3d1001');
+  static final Guid _commandUuid = Guid('6f4e0003-5f8a-4d8d-9f4f-3a7c8e3d1001');
+  static final Guid _readingUuid = Guid('6f4e0004-5f8a-4d8d-9f4f-3a7c8e3d1001');
 
   static const Duration _scanDuration = Duration(seconds: 6);
   static const Duration _connectTimeout = Duration(seconds: 10);
@@ -58,8 +54,8 @@ class Esp32BluetoothService {
       for (final result in results) {
         final name = _displayName(result);
         final lower = name.toLowerCase();
-        final isLikely = lower.contains('carbonflux') ||
-          lower.contains('esp32');
+        final isLikely =
+            lower.contains('carbonflux') || lower.contains('esp32');
 
         found[result.device.remoteId.str] = DiscoveredBluetoothDevice(
           id: result.device.remoteId.str,
@@ -110,7 +106,8 @@ class Esp32BluetoothService {
   Future<DeviceStatus> getStatus() async {
     final statusChar = _statusChar;
     if (statusChar == null) {
-      throw Esp32BluetoothException('Not connected to a CarbonFlux BLE device.');
+      throw Esp32BluetoothException(
+          'Not connected to a CarbonFlux BLE device.');
     }
 
     final payload = await statusChar.read();
@@ -128,7 +125,8 @@ class Esp32BluetoothService {
   Future<SensorReading> getReading() async {
     final readingChar = _readingChar;
     if (readingChar == null) {
-      throw Esp32BluetoothException('Not connected to a CarbonFlux BLE device.');
+      throw Esp32BluetoothException(
+          'Not connected to a CarbonFlux BLE device.');
     }
 
     final payload = await readingChar.read();
@@ -143,7 +141,8 @@ class Esp32BluetoothService {
   Future<DeviceStatus> sendCommand(String command) async {
     final commandChar = _commandChar;
     if (commandChar == null) {
-      throw Esp32BluetoothException('Not connected to a CarbonFlux BLE device.');
+      throw Esp32BluetoothException(
+          'Not connected to a CarbonFlux BLE device.');
     }
 
     await commandChar.write(utf8.encode(command), withoutResponse: false);

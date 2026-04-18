@@ -19,13 +19,13 @@ class ControlButton extends StatelessWidget {
     return ElevatedButton.icon(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: color.withOpacity(0.16),
+        backgroundColor: color.withValues(alpha: 0.16),
         foregroundColor: color,
-        disabledBackgroundColor: color.withOpacity(0.06),
-        disabledForegroundColor: color.withOpacity(0.4),
+        disabledBackgroundColor: color.withValues(alpha: 0.06),
+        disabledForegroundColor: color.withValues(alpha: 0.4),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide(color: color.withOpacity(0.6)),
+        side: BorderSide(color: color.withValues(alpha: 0.6)),
       ),
       icon: Icon(icon ?? Icons.play_arrow_rounded, size: 18),
       label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),

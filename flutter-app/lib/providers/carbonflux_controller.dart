@@ -101,9 +101,9 @@ class CarbonfluxAppState {
           connectedBluetoothDeviceId ?? this.connectedBluetoothDeviceId,
       connectedBluetoothDeviceName:
           connectedBluetoothDeviceName ?? this.connectedBluetoothDeviceName,
-        isDetectionCycleRunning:
+      isDetectionCycleRunning:
           isDetectionCycleRunning ?? this.isDetectionCycleRunning,
-        lastWarmupCompletedAt:
+      lastWarmupCompletedAt:
           lastWarmupCompletedAt ?? this.lastWarmupCompletedAt,
       warmupStartedAt:
           clearWarmupStart ? null : (warmupStartedAt ?? this.warmupStartedAt),
@@ -330,9 +330,8 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
       state = state.copyWith(
         isDiscoveringBluetooth: false,
         discoveredBluetoothDevices: discovered,
-        errorMessage: discovered.isEmpty
-            ? 'No Bluetooth devices found nearby.'
-            : null,
+        errorMessage:
+            discovered.isEmpty ? 'No Bluetooth devices found nearby.' : null,
         clearError: discovered.isNotEmpty,
       );
     } on Esp32BluetoothException catch (error) {

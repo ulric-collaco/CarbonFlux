@@ -293,12 +293,11 @@ class DashboardScreen extends ConsumerWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color:
-                                            Colors.redAccent.withOpacity(0.18),
+                                        color: Colors.redAccent.withAlpha(46),
                                         borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                          color: Colors.redAccent
-                                              .withOpacity(0.65),
+                                          color:
+                                              Colors.redAccent.withAlpha(165),
                                         ),
                                       ),
                                       child: const Text(
@@ -350,9 +349,9 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withAlpha(38),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withAlpha(128)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
