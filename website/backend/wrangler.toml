@@ -1,0 +1,14 @@
+name = "carbonflux-worker"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[[kv_namespaces]]
+binding = "CARBONFLUX_KV"
+id = "797af356c26140d2a3df5cb4bdf0eba9"
+preview_id = "30aa8e27018e417daaec7ba95be31e31"
+
+[vars]
+HMAC_SECRET = "CARBONFLUX_SECRET_KEY_2024"
+PPM_VIOLATION_THRESHOLD = "1000"
+TIMESTAMP_WINDOW_SECONDS = "300"
+CORS_ORIGIN = "https://carbonflux.vercel.app"

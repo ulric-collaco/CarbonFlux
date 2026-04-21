@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/device_status.dart';
 import '../models/sensor_reading.dart';
+import '../services/backend_service.dart';
 import '../services/esp32_api_service.dart';
 import '../services/esp32_bluetooth_service.dart';
 
@@ -32,6 +33,8 @@ class CarbonfluxAppState {
     this.lastWarmupCompletedAt,
     this.warmupStartedAt,
     this.lastUpdated,
+    this.isUploading = false,
+    this.lastUploadResult,
   });
 
   final String? savedIp;
@@ -54,6 +57,8 @@ class CarbonfluxAppState {
   final DateTime? lastWarmupCompletedAt;
   final DateTime? warmupStartedAt;
   final DateTime? lastUpdated;
+  final bool isUploading;
+  final UploadResult? lastUploadResult;
 
   CarbonfluxAppState copyWith({
     String? savedIp,
@@ -78,6 +83,8 @@ class CarbonfluxAppState {
     DateTime? warmupStartedAt,
     bool clearWarmupStart = false,
     DateTime? lastUpdated,
+    bool? isUploading,
+    UploadResult? lastUploadResult,
   }) {
     return CarbonfluxAppState(
       savedIp: savedIp ?? this.savedIp,
@@ -108,6 +115,8 @@ class CarbonfluxAppState {
       warmupStartedAt:
           clearWarmupStart ? null : (warmupStartedAt ?? this.warmupStartedAt),
       lastUpdated: lastUpdated ?? this.lastUpdated,
+      isUploading: isUploading ?? this.isUploading,
+      lastUploadResult: lastUploadResult ?? this.lastUploadResult,
     );
   }
 
@@ -137,7 +146,7 @@ class CarbonfluxAppState {
 }
 
 class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
-  CarbonfluxController(this._api, this._bluetooth)
+  CarbonfluxController(this._api, this._bluetooth, this._backend)
       : super(const CarbonfluxAppState()) {
     unawaited(_loadSavedIp());
   }
@@ -150,6 +159,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
 
   final Esp32ApiService _api;
   final Esp32BluetoothService _bluetooth;
+  final BackendService _backend;
   Timer? _pollTimer;
   int _pollTicks = 0;
 
@@ -391,6 +401,12 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
       );
 
       await _refreshNow(forceStream: true);
+
+      // ── Batch upload to backend when detection stops ───────────────
+      if (command == 'STOP' && state.readingHistory.isNotEmpty) {
+        unawaited(_uploadDetectionBatch());
+      }
+
       return true;
     } on Esp32ApiException catch (error) {
       state = state.copyWith(
@@ -621,10 +637,33 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
     return true;
   }
 
+  /// Upload all DETECTING readings accumulated during this session to the CF Worker.
+  Future<void> _uploadDetectionBatch() async {
+    state = state.copyWith(isUploading: true);
+    try {
+      final result = await _backend.uploadBatch(state.readingHistory);
+      state = state.copyWith(
+        isUploading: false,
+        lastUploadResult: result,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isUploading: false,
+        lastUploadResult: UploadResult(
+          success: false,
+          uploaded: 0,
+          failed: state.readingHistory.length,
+          error: e.toString(),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _pollTimer?.cancel();
     _bluetooth.dispose();
+    _backend.dispose();
     super.dispose();
   }
 }

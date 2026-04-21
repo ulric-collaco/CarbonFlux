@@ -1,4 +1,71 @@
-# Local agent skills and metadata
+# ─── Agent / tooling ────────────────────────────────────────────────
 .agents/
 skills-lock.json
 .gradle-home/
+
+# ─── Secrets — NEVER commit these ───────────────────────────────────
+.env
+.env.local
+.env.*.local
+*.secret
+secrets.json
+
+# ─── Flutter / Dart ─────────────────────────────────────────────────
+flutter-app/.dart_tool/
+flutter-app/.flutter-plugins
+flutter-app/.flutter-plugins-dependencies
+flutter-app/.packages
+flutter-app/build/
+flutter-app/.pub-cache/
+flutter-app/.pub/
+flutter-app/doc/api/
+flutter-app/coverage/
+flutter-app/*.iml
+flutter-app/.idea/
+flutter-app/*.log
+# Keep pubspec.lock for reproducibility (apps, not packages)
+# flutter-app/pubspec.lock
+
+# ─── Node / npm (backend + frontend) ────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+
+# ─── Vite / React build output ──────────────────────────────────────
+website/frontend/dist/
+website/frontend/.vite/
+website/frontend/.cache/
+
+# ─── Cloudflare Worker ──────────────────────────────────────────────
+.wrangler/
+website/backend/.wrangler/
+website/backend/.dev.vars          # local secrets for wrangler dev
+
+# ─── ESP32 / Arduino ────────────────────────────────────────────────
+esp32/.pio/
+esp32/.pioenvs/
+esp32/.piolibdeps/
+esp32/.clangd/
+esp32/build/
+
+# ─── OS artifacts ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# ─── Editor / IDE ───────────────────────────────────────────────────
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# ─── Logs & dumps ───────────────────────────────────────────────────
+*.log
+*.log.*
+crash_log.txt

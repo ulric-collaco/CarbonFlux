@@ -1,0 +1,179 @@
+/* ═══════════════════════════════════════════════════════════════════
+   CarbonFlux — Design System
+   Mirrors STRUCTSENSE aesthetic: Industrial Dark / Tactical HUD
+   ═══════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Backgrounds */
+  --bg-base:    #0d0d0d;
+  --bg-surface: #111111;
+  --bg-card:    #1a1a1a;
+  --bg-hover:   #222222;
+
+  /* Borders */
+  --border:        #2a2a2a;
+  --border-bright: #333333;
+
+  /* Brand — Yellow is UI chrome only, never data state */
+  --yellow:     #FFD600;
+  --yellow-dim: rgba(255, 214, 0, 0.12);
+  --yellow-mid: rgba(255, 214, 0, 0.25);
+
+  /* Status colors */
+  --green:      #00FF6A;
+  --green-dim:  rgba(0, 255, 106, 0.12);
+  --orange:     #FF8C00;
+  --orange-dim: rgba(255, 140, 0, 0.12);
+  --red:        #FF2D2D;
+  --red-dim:    rgba(255, 45, 45, 0.12);
+  --blue:       #00AAFF;
+  --blue-dim:   rgba(0, 170, 255, 0.12);
+
+  /* Typography */
+  --text-primary:   #FFFFFF;
+  --text-secondary: #888888;
+  --text-muted:     #555555;
+  --text-dim:       #333333;
+
+  /* Fonts */
+  --font-display:    'Bebas Neue', sans-serif;
+  --font-mono:       'Share Tech Mono', monospace;
+  --font-body:       'Barlow', sans-serif;
+  --font-condensed:  'Barlow Condensed', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 0; }
+::-webkit-scrollbar-thumb:hover { background: var(--yellow); }
+
+/* ─── Selection ─────────────────────────────────────────────────── */
+::selection { background: var(--yellow); color: #0d0d0d; }
+
+/* ─── Animations ────────────────────────────────────────────────── */
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes pulse-yellow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+@keyframes tick-in {
+  from { transform: translateY(6px); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pulse-red    { animation: pulse-red    1.2s ease-in-out infinite; }
+.pulse-yellow { animation: pulse-yellow 1.8s ease-in-out infinite; }
+.pulse-green  { animation: pulse-green  2.0s ease-in-out infinite; }
+.tick-in      { animation: tick-in 0.2s ease-out; }
+.fade-in      { animation: fadeIn 0.3s ease-out; }
+
+/* ─── Glow utilities ────────────────────────────────────────────── */
+.glow-green  { box-shadow: 0 0 20px rgba(0,   255, 106, 0.2); }
+.glow-yellow { box-shadow: 0 0 20px rgba(255, 214,   0, 0.2); }
+.glow-orange { box-shadow: 0 0 20px rgba(255, 140,   0, 0.2); }
+.glow-red    { box-shadow: 0 0 24px rgba(255,  45,  45, 0.28); }
+
+/* ─── Grid background texture ───────────────────────────────────── */
+.grid-bg {
+  background-image:
+    linear-gradient(rgba(255,214,0,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,214,0,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ─── Hazard stripe texture ─────────────────────────────────────── */
+.hazard-subtle {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 20px,
+    rgba(255,214,0,0.04) 20px,
+    rgba(255,214,0,0.04) 40px
+  );
+}
+
+/* ─── Data table ────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th {
+  font-family: var(--font-condensed);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--border-bright);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  z-index: 1;
+}
+.data-table td {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.data-table tr:hover td {
+  background: var(--bg-hover);
+  cursor: default;
+}
+.data-table tr:hover td:first-child {
+  border-left: 3px solid var(--yellow);
+}
+
+/* ─── Tooltip (Recharts override) ───────────────────────────────── */
+.recharts-tooltip-wrapper {
+  border: none !important;
+  outline: none !important;
+}
+
+/* ─── Responsive nav ────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .nav-desktop { display: none !important; }
+  .nav-mobile-toggle { display: flex !important; align-items: center; justify-content: center; }
+  .status-chip { display: none !important; }
+}
+@media (min-width: 640px) {
+  .logo-text { display: block !important; }
+  .logo-text-mobile { display: none !important; }
+}
