@@ -1,16 +1,14 @@
 import React, { useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 const NAV_LINKS = [
-  { label: 'LIVE MONITOR', path: '/monitor' },
+  { label: 'LIVE MONITOR', path: '/' },
   { label: 'BLOCKCHAIN LOG', path: '/chain' },
   { label: 'CHAIN AUDIT', path: '/audit' },
 ]
 
 export default function Navbar({ workerStatus }) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const location = useLocation()
-  const isLanding = location.pathname === '/'
 
   const chainLen = workerStatus?.chain_length ?? '–'
   const violations = workerStatus?.violations_count ?? 0
@@ -56,8 +54,7 @@ export default function Navbar({ workerStatus }) {
           </NavLink>
 
           {/* Desktop nav links */}
-          {!isLanding && (
-            <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.path}
@@ -79,12 +76,9 @@ export default function Navbar({ workerStatus }) {
                 </NavLink>
               ))}
             </div>
-          )}
 
           {/* Right side — status chips */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {!isLanding && (
-              <>
                 {/* Chain length */}
                 <div className="status-chip" style={{
                   padding: '5px 10px',
@@ -113,8 +107,6 @@ export default function Navbar({ workerStatus }) {
                     ⚠ {violations} VIOLATION{violations > 1 ? 'S' : ''}
                   </div>
                 )}
-              </>
-            )}
 
             {/* Mobile toggle */}
             <button
@@ -137,7 +129,7 @@ export default function Navbar({ workerStatus }) {
         </div>
 
         {/* Mobile menu */}
-        {mobileOpen && !isLanding && (
+        {mobileOpen && (
           <div style={{ borderTop: '2px solid #FFD600', paddingBottom: 8 }}>
             {NAV_LINKS.map((link) => (
               <NavLink
