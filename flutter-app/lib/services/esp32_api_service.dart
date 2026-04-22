@@ -136,13 +136,17 @@ class Esp32ApiService {
     add('192.168.43.77');
     add('192.168.1.77');
 
+    // Local host tests
+    add('10.0.2.2'); // Android emulator localhost
+
     // Common hotspot and home-router guesses.
     const commonPrefixes = <String>[
-      '192.168.43',
+      '192.168.43', // standard Android mobile hotspot
+      '192.168.205',
       '192.168.1',
       '192.168.0',
       '10.0.0',
-      '172.20.10',
+      '172.20.10', // iOS hotspot
     ];
 
     for (final prefix in commonPrefixes) {
@@ -154,18 +158,15 @@ class Esp32ApiService {
 
     final hintPrefix = _extractPrefix(hintIp);
     if (hintPrefix != null) {
-      for (var host = 2; host <= 60; host++) {
+      for (var host = 2; host <= 254; host++) {
         add('$hintPrefix.$host');
       }
-      add('$hintPrefix.77');
-      add('$hintPrefix.120');
-      add('$hintPrefix.200');
     }
 
-    for (final prefix in commonPrefixes) {
-      for (var host = 2; host <= 30; host++) {
-        add('$prefix.$host');
-      }
+    // Comprehensive scan over common mobile hotspots (takes ~2s with batching)
+    for (var host = 2; host <= 254; host++) {
+      add('192.168.43.$host');
+      add('172.20.10.$host');
     }
 
     return candidates;

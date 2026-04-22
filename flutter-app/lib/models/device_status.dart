@@ -4,12 +4,14 @@ class DeviceStatus {
     required this.state,
     required this.timestamp,
     this.statusMessage,
+    this.ip,
   });
 
   final String deviceId;
   final String state;
   final int timestamp;
   final String? statusMessage;
+  final String? ip;
 
   factory DeviceStatus.fromJson(Map<String, dynamic> json) {
     return DeviceStatus(
@@ -17,6 +19,7 @@ class DeviceStatus {
       state: (json['state'] ?? 'UNKNOWN').toString(),
       timestamp: _toInt(json['timestamp']),
       statusMessage: json['message']?.toString(),
+      ip: json['ip']?.toString(),
     );
   }
 
@@ -26,6 +29,7 @@ class DeviceStatus {
       'state': state,
       'timestamp': timestamp,
       if (statusMessage != null) 'message': statusMessage,
+      if (ip != null) 'ip': ip,
     };
   }
 

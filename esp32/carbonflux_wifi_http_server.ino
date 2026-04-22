@@ -97,6 +97,7 @@ BLECharacteristic* pBleReadingCharacteristic = nullptr;
 bool bleClientConnected = false;
 
 unsigned long warmupStart  = 0;
+unsigned long lastWarmupComplete = 0; // Tracks when the last warmup finished
 unsigned long lastReadTime = 0;
 uint32_t      nonceCounter = 0;
 const char*   DEVICE_ID    = "carbonflux-001";
@@ -118,9 +119,6 @@ void connectWiFi() {
   WiFi.mode(WIFI_STA);
 
   Serial.println("[WiFi] Connecting to primary...");
-  if (!WiFi.config(primaryIP, primaryGateway, primarySubnet, dns1, dns2)) {
-    Serial.println("[WiFi] Failed to apply static config for primary network");
-  }
   WiFi.begin(ssid1, pass1);
 
   unsigned long start = millis();
@@ -134,9 +132,6 @@ void connectWiFi() {
     delay(200);
 
     Serial.println("\n[WiFi] Trying hotspot...");
-    if (!WiFi.config(hotspotIP, hotspotGateway, hotspotSubnet, dns1, dns2)) {
-      Serial.println("[WiFi] Failed to apply static config for hotspot network");
-    }
     WiFi.begin(ssid2, pass2);
     start = millis();
     while (WiFi.status() != WL_CONNECTED && millis() - start < 12000) {
@@ -248,6 +243,10 @@ String buildStatusJson() {
   doc["device_id"] = DEVICE_ID;
   doc["state"]     = stateStr();
   doc["uptime_s"]  = millis() / 1000;
+  
+  if (WiFi.status() == WL_CONNECTED) {
+    doc["ip"] = WiFi.localIP().toString();
+  }
 
   if (currentState == WARMUP) {
     unsigned long elapsed = millis() - warmupStart;
@@ -297,11 +296,19 @@ void processCommand(const String& cmd, String& result, String& message) {
 
   if (cmd == "START_WARMUP") {
     if (currentState == STANDBY || currentState == STOPPED) {
-      currentState = WARMUP;
-      warmupStart  = millis();
-      readingCount = 0;
-      message      = "Warmup started - 90 seconds";
-      Serial.println("[STATE] -> WARMUP");
+      if (lastWarmupComplete != 0 && (millis() - lastWarmupComplete) < (20UL * 60UL * 1000UL)) {
+        // Less than 20 mins since last warmup, skip it entirely
+        currentState = READY;
+        readingCount = 0;
+        message      = "Warmup skipped - sensor still warm";
+        Serial.println("[STATE] -> READY (Warmup skipped)");
+      } else {
+        currentState = WARMUP;
+        warmupStart  = millis();
+        readingCount = 0;
+        message      = "Warmup started - 90 seconds";
+        Serial.println("[STATE] -> WARMUP");
+      }
     } else {
       result  = "ignored";
       message = "Already in " + String(stateStr());
@@ -492,6 +499,7 @@ void loop() {
 
     if (elapsed >= WARMUP_MS) {
       currentState = READY;
+      lastWarmupComplete = now; // Log when it finished heating
       Serial.println("[STATE] -> READY");
       Serial.println("[CarbonFlux] Sensor ready — send START_DETECT");
       updateBleTelemetry(true);

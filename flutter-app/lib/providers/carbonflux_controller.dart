@@ -398,6 +398,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         status: status,
         warmupStartedAt: warmupStart,
         clearWarmupStart: clearWarmup,
+        savedIp: status.ip ?? state.savedIp,
       );
 
       await _refreshNow(forceStream: true);
@@ -559,6 +560,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         warmupStartedAt: warmupStart,
         clearWarmupStart: clearWarmup,
         lastUpdated: DateTime.now(),
+        savedIp: status.ip ?? state.savedIp,
       );
 
       if (state.transport == ConnectionTransport.wifi) {
@@ -617,6 +619,20 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
             ),
       lastUpdated: DateTime.now(),
     );
+
+    // Live sync to backend for the classroom demo when in DETECTING state
+    if (reading.state == 'DETECTING' && reading.ppmProxy > 0) {
+      unawaited(_uploadSingleReading(reading));
+    }
+  }
+
+  Future<void> _uploadSingleReading(SensorReading reading) async {
+    try {
+      final result = await _backend.uploadReadingLive(reading);
+      if (result.success) {
+         state = state.copyWith(lastUploadResult: result);
+      }
+    } catch (_) {}
   }
 
   void _startPolling() {

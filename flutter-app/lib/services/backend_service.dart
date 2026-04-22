@@ -77,14 +77,17 @@ class BackendService {
     required double ppmValue,
     required double avgPpm,
   }) {
-    // jsonEncode produces sorted keys in Dart — but to be safe we build
-    // the map in the exact same key order as the CF Worker.
+    // JavaScript's JSON.stringify drops .0 on integers, causing hash mismatches.
+    // Force ints if they are whole numbers.
+    final p = ppmValue == ppmValue.toInt() ? ppmValue.toInt() : ppmValue;
+    final a = avgPpm == avgPpm.toInt() ? avgPpm.toInt() : avgPpm;
+
     final map = <String, dynamic>{
       'device_id': deviceId,
       'timestamp': timestamp,
       'nonce': nonce,
-      'ppm_value': ppmValue,
-      'avg_ppm': avgPpm,
+      'ppm_value': p,
+      'avg_ppm': a,
     };
     return jsonEncode(map);
   }
@@ -95,9 +98,13 @@ class BackendService {
     final ppmValue = reading.ppmProxy;
     final avgPpm = reading.ppmProxy; // Same until firmware exposes avg separately
 
+    // Inject absolute Unix time, since ESP32 only sends uptime from millis() 
+    // and Cloudflare checks the timestamp window (±5 mins).
+    final unixTime = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+
     final canonical = _canonicalJson(
       deviceId: reading.deviceId,
-      timestamp: reading.timestamp,
+      timestamp: unixTime,
       nonce: reading.nonce,
       ppmValue: ppmValue,
       avgPpm: avgPpm,
@@ -106,12 +113,17 @@ class BackendService {
     final dataHash = _sha256Hex(canonical);
     final signature = _hmacSha256Hex(dataHash);
 
+    // Also strip .0 for the final payload so CF Worker receives the raw typed ints
+    final p = ppmValue == ppmValue.toInt() ? ppmValue.toInt() : ppmValue;
+    final a = avgPpm == avgPpm.toInt() ? avgPpm.toInt() : avgPpm;
+
     return {
       'device_id': reading.deviceId,
-      'timestamp': reading.timestamp,
+      'timestamp': unixTime,
       'nonce': reading.nonce,
-      'ppm_value': ppmValue,
-      'avg_ppm': avgPpm,
+
+      'ppm_value': p,
+      'avg_ppm': a,
       'data_hash': dataHash,
       'signature': signature,
     };
@@ -144,6 +156,31 @@ class BackendService {
     throw BackendException(
       decoded['error']?.toString() ?? 'Upload failed (HTTP ${response.statusCode})',
     );
+  }
+
+  /// Uploads a single reading immediately (live updates)
+  Future<UploadResult> uploadReadingLive(SensorReading reading) async {
+    if (reading.state != 'DETECTING' || reading.ppmProxy <= 0) {
+      return const UploadResult(
+        success: false, uploaded: 0, failed: 1, error: 'Ignored: Not detecting');
+    }
+    
+    try {
+      final result = await _postReading(reading);
+      return UploadResult(
+        success: true,
+        uploaded: 1,
+        failed: 0,
+        lastBlockIndex: result['block_index'] as int?,
+      );
+    } catch (e) {
+      return UploadResult(
+        success: false,
+        uploaded: 0,
+        failed: 1,
+        error: e.toString(),
+      );
+    }
   }
 
   /// Batch-upload [readings] to the backend.

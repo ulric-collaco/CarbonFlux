@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../models/device_status.dart';
 import '../models/sensor_reading.dart';
@@ -43,7 +44,26 @@ class Esp32BluetoothService {
   BluetoothCharacteristic? _commandChar;
   BluetoothCharacteristic? _readingChar;
 
+  Future<void> requestPermissions() async {
+    final isGranted = await Permission.bluetoothScan.request().isGranted &&
+        await Permission.bluetoothConnect.request().isGranted;
+
+    if (!isGranted) {
+      throw Esp32BluetoothException(
+          'Bluetooth permissions are required to scan for devices. Please grant them in settings.');
+    }
+    
+    // Android requires location access for BLE scanning
+    final locationGranted = await Permission.locationWhenInUse.request().isGranted;
+    if (!locationGranted) {
+       throw Esp32BluetoothException(
+          'Location permission is required by Android to scan for Bluetooth devices.');
+    }
+  }
+
   Future<List<DiscoveredBluetoothDevice>> scanDevices() async {
+    await requestPermissions();
+
     final adapterState = await FlutterBluePlus.adapterState.first;
     if (adapterState != BluetoothAdapterState.on) {
       throw Esp32BluetoothException('Bluetooth is off. Turn it on and retry.');
