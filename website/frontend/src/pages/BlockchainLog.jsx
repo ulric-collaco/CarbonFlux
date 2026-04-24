@@ -45,13 +45,9 @@ export default function BlockchainLog() {
     <div style={{ minHeight: '100vh', background: '#0d0d0d' }}>
 
       {/* Header */}
-      <div style={{
-        borderBottom: '2px solid #111', padding: '16px 24px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: '#fff', letterSpacing: '0.05em' }}>
+      <div className="page-header">
+        <div className="page-header-row" style={{ gap: 16 }}>
+          <div className="page-title">
             BLOCKCHAIN LOG
           </div>
           <div style={{
@@ -75,11 +71,12 @@ export default function BlockchainLog() {
         </div>
 
         {/* Filter buttons */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="page-header-actions">
           {['ALL', 'VIOLATION', 'COMPLIANT'].map(f => (
             <button
               key={f}
               id={`filter-${f.toLowerCase()}`}
+              className="filter-btn"
               onClick={() => setFilter(f)}
               style={{
                 padding: '7px 14px',
@@ -99,8 +96,7 @@ export default function BlockchainLog() {
       </div>
 
       {error && (
-        <div style={{
-          margin: '16px 24px', padding: '12px 16px',
+        <div className="page-error-banner" style={{
           background: 'rgba(255,45,45,0.08)', border: '1px solid rgba(255,45,45,0.4)',
           fontFamily: 'var(--font-mono)', fontSize: 12, color: '#FF2D2D',
         }}>
@@ -109,20 +105,14 @@ export default function BlockchainLog() {
       )}
 
       {/* Stats row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-        gap: 0,
-        borderBottom: '2px solid #111',
-      }}>
+      <div className="blockchain-stats" style={{ borderBottom: '2px solid #111' }}>
         {[
           { label: 'TOTAL BLOCKS', value: total, color: '#FFD600' },
           { label: 'VIOLATIONS', value: violationCount, color: violationCount > 0 ? '#FF2D2D' : '#555' },
           { label: 'COMPLIANT', value: total - violationCount, color: '#00FF6A' },
           { label: 'SHOWING', value: filtered.length, color: '#888' },
         ].map(({ label, value, color }) => (
-          <div key={label} style={{
-            padding: '18px 24px',
+          <div key={label} className="stats-card" style={{
             borderRight: '1px solid #111',
           }}>
             <div style={{
@@ -134,7 +124,7 @@ export default function BlockchainLog() {
             </div>
             <div style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 36, color, lineHeight: 1,
+              fontSize: 'clamp(28px, 11vw, 36px)', color, lineHeight: 1,
             }}>
               {value}
             </div>
@@ -143,7 +133,7 @@ export default function BlockchainLog() {
       </div>
 
       {/* Block table */}
-      <div style={{ overflowX: 'auto' }}>
+      <div className="chain-table-wrap" style={{ overflowX: 'auto' }}>
         {loading ? (
           <div style={{
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -153,7 +143,7 @@ export default function BlockchainLog() {
             LOADING CHAIN…
           </div>
         ) : (
-          <table className="data-table">
+          <table className="data-table chain-table">
             <thead>
               <tr>
                 <th>#</th>
