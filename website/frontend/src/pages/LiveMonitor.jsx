@@ -6,6 +6,7 @@ import {
 import { api } from '../api.js'
 import { POLL_INTERVAL_MS, PPM_VIOLATION_THRESHOLD } from '../config.js'
 import { StateBadge, PpmGauge, KPICard } from '../components/Widgets.jsx'
+import { exportData } from '../utils/export.js'
 
 const MAX_CHART_POINTS = 60
 
@@ -177,6 +178,60 @@ export default function LiveMonitor() {
               accentColor={violationCount > 0 ? '#FF2D2D' : '#555'}
               subLabel={`Threshold: ${PPM_VIOLATION_THRESHOLD} ppm`}
             />
+          </div>
+
+          <div style={{ padding: '0 20px', marginTop: 16 }}>
+            <div style={{
+              background: '#111',
+              border: '1px solid #1a1a1a',
+              borderLeft: '3px solid #00AAFF',
+              padding: '14px 16px',
+            }}>
+              <div style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 10, fontWeight: 700,
+                letterSpacing: '0.2em', color: '#555',
+                marginBottom: 10,
+              }}>
+                ARCHIVAL / EXPORT
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <button
+                  onClick={() => exportData(readings, 'csv')}
+                  style={{
+                    background: '#1a1a1a', border: '1px solid #333',
+                    padding: '10px 0', color: '#00AAFF',
+                    fontFamily: 'var(--font-condensed)', fontSize: 13,
+                    fontWeight: 700, letterSpacing: '0.15em',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#222'}
+                  onMouseOut={e => e.currentTarget.style.background = '#1a1a1a'}
+                  onMouseDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
+                  onMouseUp={e => e.currentTarget.style.transform = 'none'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                >
+                  DL CSV
+                </button>
+                <button
+                  onClick={() => exportData(readings, 'xlsx')}
+                  style={{
+                    background: '#1a1a1a', border: '1px solid #333',
+                    padding: '10px 0', color: '#00FF6A',
+                    fontFamily: 'var(--font-condensed)', fontSize: 13,
+                    fontWeight: 700, letterSpacing: '0.15em',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#222'}
+                  onMouseOut={e => e.currentTarget.style.background = '#1a1a1a'}
+                  onMouseDown={e => e.currentTarget.style.transform = 'scale(0.96)'}
+                  onMouseUp={e => e.currentTarget.style.transform = 'none'}
+                  onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+                >
+                  DL XLSX
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Last poll time */}
