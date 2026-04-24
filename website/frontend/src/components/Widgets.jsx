@@ -74,7 +74,7 @@ export function PpmGauge({ ppm = 0, label = 'PPM VALUE' }) {
 
       <div className="tick-in" style={{
         fontFamily: 'var(--font-display)',
-        fontSize: 88,
+        fontSize: 'clamp(56px, 20vw, 88px)',
         color,
         lineHeight: 1,
         letterSpacing: '0.01em',

@@ -78,26 +78,17 @@ export default function LiveMonitor() {
     <div style={{ minHeight: '100vh', background: '#0d0d0d' }}>
 
       {/* Page header */}
-      <div style={{
-        background: '#0d0d0d',
-        borderBottom: '2px solid #111',
-        padding: '16px 24px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 28, color: '#fff', letterSpacing: '0.05em',
-          }}>
+      <div className="page-header" style={{ background: '#0d0d0d' }}>
+        <div className="page-header-row" style={{ gap: 16 }}>
+          <div className="page-title">
             LIVE MONITOR
           </div>
           {latest && <StateBadge state="DETECTING" />}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div className="page-header-actions" style={{ alignItems: 'center' }}>
           {/* Device ID */}
-          <div style={{
+          <div className="monitor-meta-chip" style={{
             fontFamily: 'var(--font-mono)', fontSize: 10,
             color: '#444', padding: '6px 10px', border: '1px solid #1a1a1a',
           }}>
@@ -105,7 +96,7 @@ export default function LiveMonitor() {
           </div>
 
           {/* Sample count */}
-          <div style={{
+          <div className="monitor-meta-chip" style={{
             fontFamily: 'var(--font-mono)', fontSize: 10,
             color: '#444', padding: '6px 10px', border: '1px solid #1a1a1a',
           }}>
@@ -121,6 +112,7 @@ export default function LiveMonitor() {
               if (next) intervalRef.current = setInterval(poll, POLL_INTERVAL_MS)
               else clearInterval(intervalRef.current)
             }}
+            className="monitor-live-toggle"
             style={{
               padding: '8px 20px',
               background: isLive ? 'transparent' : '#FFD600',
@@ -139,9 +131,7 @@ export default function LiveMonitor() {
 
       {/* Error banner */}
       {error && (
-        <div style={{
-          margin: '16px 24px',
-          padding: '12px 16px',
+        <div className="page-error-banner" style={{
           background: 'rgba(255,45,45,0.08)',
           border: '1px solid rgba(255,45,45,0.4)',
           fontFamily: 'var(--font-mono)', fontSize: 12, color: '#FF2D2D',
@@ -152,20 +142,10 @@ export default function LiveMonitor() {
       )}
 
       {/* Main grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '280px 1fr',
-        gap: 0,
-        minHeight: 'calc(100vh - 140px)',
-      }}>
+      <div className="monitor-main-grid">
 
         {/* ─── Left panel — KPIs ─── */}
-        <div style={{
-          borderRight: '2px solid #111',
-          display: 'flex', flexDirection: 'column',
-          overflowY: 'auto',
-          background: '#0d0d0d',
-        }}>
+        <div className="monitor-left-panel">
           <div style={{ padding: '20px 20px 12px' }}>
             <PpmGauge ppm={currentPpm} label="CURRENT PPM" />
           </div>
@@ -226,15 +206,13 @@ export default function LiveMonitor() {
         </div>
 
         {/* ─── Right panel — Chart ─── */}
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div className="monitor-right-panel">
 
           {/* Violation alert banner */}
           {currentPpm > PPM_VIOLATION_THRESHOLD && (
-            <div className="pulse-red glow-red fade-in" style={{
-              padding: '12px 20px',
+            <div className="pulse-red glow-red fade-in monitor-alert" style={{
               background: 'rgba(255,45,45,0.1)',
               border: '2px solid rgba(255,45,45,0.6)',
-              display: 'flex', alignItems: 'center', gap: 12,
             }}>
               <span style={{
                 fontFamily: 'var(--font-display)',
@@ -252,12 +230,7 @@ export default function LiveMonitor() {
           )}
 
           {/* Chart */}
-          <div style={{
-            background: '#111',
-            border: '1px solid #1a1a1a',
-            padding: '20px 20px 10px',
-            flex: 1, minHeight: 340,
-          }}>
+          <div className="monitor-chart-box">
             <div style={{
               fontFamily: 'var(--font-condensed)',
               fontSize: 10, fontWeight: 700,
@@ -323,7 +296,7 @@ export default function LiveMonitor() {
             )}
 
             {/* Legend */}
-            <div style={{ display: 'flex', gap: 20, marginTop: 12 }}>
+            <div className="monitor-legend">
               {[
                 { color: '#00FF6A', label: 'PPM VALUE', dashed: false },
                 { color: '#FFD600', label: 'AVG PPM', dashed: true },
@@ -344,7 +317,7 @@ export default function LiveMonitor() {
           </div>
 
           {/* Recent readings mini-table */}
-          <div style={{ background: '#111', border: '1px solid #1a1a1a', overflow: 'auto', maxHeight: 240 }}>
+          <div className="monitor-readings-box">
             <div style={{
               padding: '12px 16px',
               borderBottom: '2px solid #1a1a1a',
@@ -354,7 +327,7 @@ export default function LiveMonitor() {
             }}>
               RECENT READINGS
             </div>
-            <table className="data-table">
+            <table className="data-table live-table">
               <thead>
                 <tr>
                   <th>TIME</th>
@@ -402,12 +375,6 @@ export default function LiveMonitor() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @media (max-width: 900px) {
-          .monitor-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   )
 }

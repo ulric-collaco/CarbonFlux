@@ -33,13 +33,9 @@ export default function ChainAudit() {
     <div style={{ minHeight: '100vh', background: '#0d0d0d' }}>
 
       {/* Header */}
-      <div style={{
-        borderBottom: '2px solid #111', padding: '16px 24px',
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, color: '#fff', letterSpacing: '0.05em' }}>
+      <div className="page-header">
+        <div className="page-header-row" style={{ gap: 16 }}>
+          <div className="page-title">
             CHAIN AUDIT
           </div>
           {auditResult && (
@@ -60,6 +56,7 @@ export default function ChainAudit() {
 
         <button
           id="run-audit-btn"
+          className="audit-run-button"
           onClick={runAudit}
           disabled={loading}
           style={{
@@ -80,8 +77,7 @@ export default function ChainAudit() {
 
       {/* Error */}
       {error && (
-        <div style={{
-          margin: '16px 24px', padding: '12px 16px',
+        <div className="page-error-banner" style={{
           background: 'rgba(255,45,45,0.08)', border: '1px solid rgba(255,45,45,0.4)',
           fontFamily: 'var(--font-mono)', fontSize: 12, color: '#FF2D2D',
         }}>
@@ -91,19 +87,12 @@ export default function ChainAudit() {
 
       {/* Empty state */}
       {!auditResult && !loading && !error && (
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          height: 'calc(100vh - 140px)', gap: 16,
-        }}>
+        <div className="audit-empty">
           <div className="grid-bg" style={{
             position: 'absolute', inset: 0, zIndex: 0, opacity: 0.5,
           }} />
           <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-            <div style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 80, color: '#1a1a1a', marginBottom: 16,
-            }}>
+            <div className="audit-empty-title">
               AUDIT
             </div>
             <div style={{
@@ -129,22 +118,18 @@ export default function ChainAudit() {
       {auditResult && (
         <div className="fade-in">
           {/* Summary stats */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            borderBottom: '2px solid #111',
-          }}>
+          <div className="blockchain-stats" style={{ borderBottom: '2px solid #111' }}>
             {[
               { label: 'BLOCKS CHECKED', value: auditResult.chain_length, color: '#888' },
               { label: 'PASSED', value: passed, color: '#00FF6A' },
               { label: 'FAILED', value: failed, color: failed > 0 ? '#FF2D2D' : '#333' },
               { label: 'INTEGRITY', value: chainValid ? '100%' : `${Math.round((passed / (passed + failed)) * 100)}%`, color: chainValid ? '#00FF6A' : '#FF2D2D' },
             ].map(({ label, value, color }) => (
-              <div key={label} style={{ padding: '20px 24px', borderRight: '1px solid #111' }}>
+              <div key={label} className="stats-card" style={{ borderRight: '1px solid #111' }}>
                 <div style={{ fontFamily: 'var(--font-condensed)', fontSize: 10, fontWeight: 700, letterSpacing: '0.2em', color: '#555', marginBottom: 6 }}>
                   {label}
                 </div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 40, color, lineHeight: 1 }}>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(30px, 12vw, 40px)', color, lineHeight: 1 }}>
                   {value}
                 </div>
               </div>
@@ -160,7 +145,7 @@ export default function ChainAudit() {
 
           {/* Block results table */}
           <div style={{ overflowX: 'auto' }}>
-            <table className="data-table">
+            <table className="data-table audit-table">
               <thead>
                 <tr>
                   <th>BLOCK #</th>

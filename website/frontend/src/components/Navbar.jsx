@@ -21,25 +21,25 @@ export default function Navbar({ workerStatus }) {
       top: 0,
       zIndex: 100,
     }}>
-      <nav style={{ maxWidth: 1600, margin: '0 auto', padding: '0 24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+      <nav className="nav-shell" style={{ maxWidth: 1600, margin: '0 auto' }}>
+        <div className="nav-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
 
           {/* Logo */}
-          <NavLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <NavLink to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{
-              width: 44, height: 44,
+              width: 38, height: 38,
               background: '#FFD600',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transform: 'rotate(-2deg)',
               flexShrink: 0,
             }}>
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: '#0d0d0d' }}>CF</span>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: '#0d0d0d' }}>CF</span>
             </div>
             <div className="logo-text-mobile">
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: '#FFD600', letterSpacing: '0.1em', display: 'block' }}>
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: '#FFD600', letterSpacing: '0.08em', display: 'block' }}>
                 CARBONFLUX
               </span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#555', letterSpacing: '0.2em' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: '#555', letterSpacing: '0.16em' }}>
                 EMISSION MONITOR
               </span>
             </div>
@@ -54,7 +54,7 @@ export default function Navbar({ workerStatus }) {
           </NavLink>
 
           {/* Desktop nav links */}
-          <div className="nav-desktop" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <div className="nav-desktop" style={{ display: 'none', alignItems: 'center', gap: 2 }}>
               {NAV_LINKS.map((link) => (
                 <NavLink
                   key={link.path}
@@ -78,7 +78,7 @@ export default function Navbar({ workerStatus }) {
             </div>
 
           {/* Right side — status chips */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 {/* Chain length */}
                 <div className="status-chip" style={{
                   padding: '5px 10px',
@@ -113,13 +113,13 @@ export default function Navbar({ workerStatus }) {
               onClick={() => setMobileOpen(!mobileOpen)}
               className="nav-mobile-toggle"
               style={{
-                width: 44, height: 44,
+                width: 42, height: 42,
                 background: mobileOpen ? '#FFD600' : '#111',
                 border: '2px solid #333',
                 color: mobileOpen ? '#0d0d0d' : '#888',
                 fontSize: 20,
                 cursor: 'pointer',
-                display: 'none',
+                display: 'flex',
               }}
               aria-label="Toggle menu"
             >
@@ -130,7 +130,7 @@ export default function Navbar({ workerStatus }) {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div style={{ borderTop: '2px solid #FFD600', paddingBottom: 8 }}>
+          <div style={{ borderTop: '2px solid #FFD600', paddingBottom: 6 }}>
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.path}
@@ -138,7 +138,7 @@ export default function Navbar({ workerStatus }) {
                 onClick={() => setMobileOpen(false)}
                 style={({ isActive }) => ({
                   display: 'block',
-                  padding: '14px 24px',
+                  padding: '12px 14px',
                   fontFamily: 'var(--font-condensed)',
                   fontSize: 13,
                   fontWeight: 700,
