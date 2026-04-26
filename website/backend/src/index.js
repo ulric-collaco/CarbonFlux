@@ -15,12 +15,17 @@
  *   GET  /chain           — full blockchain
  *   GET  /latest?n=20     — last N blocks
  *   GET  /violations      — blocks flagged as VIOLATION
+ *   GET  /incidents       — incident list (open/resolved/all)
+ *   GET  /incident-stats  — incident overview metrics
+ *   POST /incidents/:id/acknowledge — acknowledge an open incident
+ *   POST /incidents/:id/resolve     — resolve an incident manually
  *   GET  /status          — health check
  */
 
 const MAX_READINGS = 200;
 const MAX_NONCES = 1000;
 const MAX_CHAIN_RESPONSE = 500;
+const MAX_INCIDENTS = 1000;
 
 // ─── CORS helpers ────────────────────────────────────────────────────────────
 
@@ -201,6 +206,165 @@ async function verifyChain(chain) {
   return { valid: chainValid, results };
 }
 
+// ─── Incident lifecycle ──────────────────────────────────────────────────────
+
+const SEVERITY_RANK = {
+  LOW: 1,
+  MEDIUM: 2,
+  HIGH: 3,
+  CRITICAL: 4,
+};
+
+function normalizeSeverity(value) {
+  if (!value) return 'LOW';
+  const upper = String(value).toUpperCase();
+  return SEVERITY_RANK[upper] ? upper : 'LOW';
+}
+
+function pickHigherSeverity(current, candidate) {
+  const currentNormalized = normalizeSeverity(current);
+  const candidateNormalized = normalizeSeverity(candidate);
+  return SEVERITY_RANK[candidateNormalized] > SEVERITY_RANK[currentNormalized]
+    ? candidateNormalized
+    : currentNormalized;
+}
+
+function evaluateSeverity(ppmValue, threshold, durationSeconds) {
+  const ratio = threshold > 0 ? ppmValue / threshold : 0;
+  if (ratio >= 2 || durationSeconds >= 120) return 'CRITICAL';
+  if (ratio >= 1.5 || durationSeconds >= 60) return 'HIGH';
+  if (ratio >= 1.2 || durationSeconds >= 30) return 'MEDIUM';
+  return 'LOW';
+}
+
+function buildIncidentId(deviceId, nowMs) {
+  const safeDevice = String(deviceId || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'unknown';
+  const entropy = Math.random().toString(16).slice(2, 10);
+  return `inc_${safeDevice}_${nowMs}_${entropy}`;
+}
+
+function parseBooleanEnv(value, defaultValue) {
+  if (value == null) return defaultValue;
+  return !['0', 'false', 'no', 'off'].includes(String(value).toLowerCase());
+}
+
+async function getIncidents(env) {
+  const raw = await env.CARBONFLUX_KV.get('incidents');
+  return raw ? JSON.parse(raw) : [];
+}
+
+async function storeIncidents(env, incidents) {
+  const copy = Array.isArray(incidents) ? [...incidents] : [];
+
+  while (copy.length > MAX_INCIDENTS) {
+    const resolvedIdx = copy.findIndex((incident) => incident.status === 'RESOLVED');
+    if (resolvedIdx >= 0) copy.splice(resolvedIdx, 1);
+    else copy.shift();
+  }
+
+  await env.CARBONFLUX_KV.put('incidents', JSON.stringify(copy));
+  return copy;
+}
+
+async function processIncidentLifecycle(env, reading, nowMs) {
+  const threshold = parseInt(env.PPM_VIOLATION_THRESHOLD || '1000', 10);
+  const sustainedWindowSecs = parseInt(env.INCIDENT_SUSTAINED_SECONDS || '30', 10);
+  const autoResolve = parseBooleanEnv(env.INCIDENT_AUTO_RESOLVE, true);
+  const ppmValue = Number(reading.ppm_value);
+
+  if (!Number.isFinite(ppmValue)) {
+    return { action: 'none', incident: null };
+  }
+
+  const incidents = await getIncidents(env);
+  const openIncident = incidents.find(
+    (incident) => incident.status === 'OPEN'
+      && incident.type === 'PPM_THRESHOLD_EXCEEDED'
+      && incident.device_id === reading.device_id,
+  );
+
+  if (ppmValue > threshold) {
+    if (!openIncident) {
+      const created = {
+        id: buildIncidentId(reading.device_id, nowMs),
+        type: 'PPM_THRESHOLD_EXCEEDED',
+        status: 'OPEN',
+        severity: evaluateSeverity(ppmValue, threshold, 0),
+        device_id: reading.device_id,
+        threshold_ppm: threshold,
+        latest_ppm: ppmValue,
+        peak_ppm: ppmValue,
+        sample_count: 1,
+        sustained: false,
+        duration_seconds: 0,
+        triggered_at: nowMs,
+        last_seen_at: nowMs,
+        updated_at: nowMs,
+        acknowledged: false,
+        acknowledged_by: null,
+        acknowledged_at: null,
+        notes: [],
+      };
+
+      incidents.push(created);
+      await storeIncidents(env, incidents);
+      return { action: 'created', incident: created };
+    }
+
+    const durationSeconds = Math.max(0, Math.floor((nowMs - openIncident.triggered_at) / 1000));
+    const evaluatedSeverity = evaluateSeverity(ppmValue, threshold, durationSeconds);
+
+    openIncident.latest_ppm = ppmValue;
+    openIncident.peak_ppm = Math.max(openIncident.peak_ppm || ppmValue, ppmValue);
+    openIncident.sample_count = (openIncident.sample_count || 0) + 1;
+    openIncident.duration_seconds = durationSeconds;
+    openIncident.sustained = durationSeconds >= sustainedWindowSecs;
+    openIncident.last_seen_at = nowMs;
+    openIncident.updated_at = nowMs;
+    openIncident.severity = pickHigherSeverity(openIncident.severity, evaluatedSeverity);
+
+    await storeIncidents(env, incidents);
+    return { action: 'updated', incident: openIncident };
+  }
+
+  if (openIncident && autoResolve) {
+    openIncident.status = 'RESOLVED';
+    openIncident.resolved_at = nowMs;
+    openIncident.resolved_by = 'system';
+    openIncident.resolution = 'AUTO_RECOVERY';
+    openIncident.resolution_note = 'PPM returned to compliant range';
+    openIncident.latest_ppm = ppmValue;
+    openIncident.last_seen_at = nowMs;
+    openIncident.updated_at = nowMs;
+    openIncident.duration_seconds = Math.max(0, Math.floor((nowMs - openIncident.triggered_at) / 1000));
+
+    await storeIncidents(env, incidents);
+    return { action: 'resolved', incident: openIncident };
+  }
+
+  return { action: 'none', incident: null };
+}
+
+function computeIncidentStats(incidents) {
+  const now = Date.now();
+  const open = incidents.filter((incident) => incident.status === 'OPEN');
+  const resolved = incidents.filter((incident) => incident.status === 'RESOLVED');
+  const openUnacknowledged = open.filter((incident) => !incident.acknowledged);
+  const openCritical = open.filter((incident) => normalizeSeverity(incident.severity) === 'CRITICAL');
+  const activeDevices = new Set(open.map((incident) => incident.device_id)).size;
+  const inLast24h = incidents.filter((incident) => now - (incident.triggered_at || 0) <= 24 * 60 * 60 * 1000);
+
+  return {
+    total: incidents.length,
+    open: open.length,
+    resolved: resolved.length,
+    open_unacknowledged: openUnacknowledged.length,
+    open_critical: openCritical.length,
+    active_devices: activeDevices,
+    triggered_last_24h: inLast24h.length,
+  };
+}
+
 // ─── Route handlers ───────────────────────────────────────────────────────────
 
 async function handleIngest(request, env, corsHeaders) {
@@ -228,9 +392,10 @@ async function handleIngest(request, env, corsHeaders) {
   // Store reading
   const readingsRaw = await env.CARBONFLUX_KV.get('readings');
   const readings = readingsRaw ? JSON.parse(readingsRaw) : [];
+  const receivedAt = Date.now();
   const readingRecord = {
     ...payload,
-    received_at: Date.now(),
+    received_at: receivedAt,
     validated: true,
   };
   readings.push(readingRecord);
@@ -239,6 +404,7 @@ async function handleIngest(request, env, corsHeaders) {
 
   // Append to blockchain
   const block = await appendBlock(env, payload);
+  const incidentResult = await processIncidentLifecycle(env, payload, receivedAt);
 
   return jsonResponse(
     {
@@ -247,6 +413,15 @@ async function handleIngest(request, env, corsHeaders) {
       block_hash: block.block_hash,
       violation: block.violation,
       violation_label: block.violation_label,
+      incident_update: incidentResult.action,
+      incident: incidentResult.incident
+        ? {
+          id: incidentResult.incident.id,
+          status: incidentResult.incident.status,
+          severity: incidentResult.incident.severity,
+          acknowledged: incidentResult.incident.acknowledged,
+        }
+        : null,
       message: block.violation
         ? '⚠ VIOLATION RECORDED — PPM exceeds threshold'
         : '✓ Reading validated and added to chain',
@@ -286,6 +461,96 @@ async function handleViolations(request, env, corsHeaders) {
   return jsonResponse({ violations, total: violations.length }, 200, corsHeaders);
 }
 
+async function handleIncidents(request, env, corsHeaders) {
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get('limit') || '100', 10), 200);
+  const statusFilter = String(url.searchParams.get('status') || 'all').toUpperCase();
+  const deviceFilter = url.searchParams.get('device_id');
+
+  const incidents = await getIncidents(env);
+  const filtered = incidents
+    .filter((incident) => {
+      if (statusFilter === 'OPEN' && incident.status !== 'OPEN') return false;
+      if (statusFilter === 'RESOLVED' && incident.status !== 'RESOLVED') return false;
+      if (statusFilter === 'UNACKNOWLEDGED' && (incident.status !== 'OPEN' || incident.acknowledged)) return false;
+      if (deviceFilter && incident.device_id !== deviceFilter) return false;
+      return true;
+    })
+    .sort((a, b) => (b.updated_at || b.triggered_at || 0) - (a.updated_at || a.triggered_at || 0));
+
+  return jsonResponse(
+    {
+      incidents: filtered.slice(0, limit),
+      total: filtered.length,
+      overall_total: incidents.length,
+      status_filter: statusFilter,
+    },
+    200,
+    corsHeaders,
+  );
+}
+
+async function handleIncidentAction(request, env, corsHeaders, incidentId, action) {
+  let body = {};
+  try {
+    const rawBody = await request.text();
+    if (rawBody.trim()) {
+      body = JSON.parse(rawBody);
+    }
+  } catch {
+    return errorResponse('Invalid JSON body', 400, corsHeaders);
+  }
+
+  const actor = String(body.actor || 'operator').slice(0, 64);
+  const note = body.note == null ? '' : String(body.note).slice(0, 240);
+
+  const incidents = await getIncidents(env);
+  const incident = incidents.find((item) => item.id === incidentId);
+  if (!incident) {
+    return errorResponse('Incident not found', 404, corsHeaders);
+  }
+
+  const nowMs = Date.now();
+
+  if (action === 'acknowledge') {
+    if (incident.status !== 'OPEN') {
+      return errorResponse('Only open incidents can be acknowledged', 409, corsHeaders);
+    }
+    incident.acknowledged = true;
+    incident.acknowledged_by = actor;
+    incident.acknowledged_at = nowMs;
+    incident.updated_at = nowMs;
+    if (note) {
+      incident.notes = Array.isArray(incident.notes) ? incident.notes : [];
+      incident.notes.push({ type: 'ACK', actor, note, at: nowMs });
+    }
+  }
+
+  if (action === 'resolve') {
+    if (incident.status !== 'RESOLVED') {
+      incident.status = 'RESOLVED';
+      incident.resolved_at = nowMs;
+      incident.resolved_by = actor;
+      incident.resolution = 'MANUAL_RESOLUTION';
+      incident.resolution_note = note || 'Resolved by operator';
+      incident.updated_at = nowMs;
+      incident.duration_seconds = Math.max(0, Math.floor((nowMs - incident.triggered_at) / 1000));
+      if (note) {
+        incident.notes = Array.isArray(incident.notes) ? incident.notes : [];
+        incident.notes.push({ type: 'RESOLVE', actor, note, at: nowMs });
+      }
+    }
+  }
+
+  await storeIncidents(env, incidents);
+  return jsonResponse({ success: true, incident }, 200, corsHeaders);
+}
+
+async function handleIncidentStats(env, corsHeaders) {
+  const incidents = await getIncidents(env);
+  return jsonResponse({ stats: computeIncidentStats(incidents) }, 200, corsHeaders);
+}
+
 async function handleAudit(request, env, corsHeaders) {
   const chain = await getChain(env);
   const result = await verifyChain(chain);
@@ -299,9 +564,12 @@ async function handleAudit(request, env, corsHeaders) {
 async function handleStatus(env, corsHeaders) {
   const chainRaw = await env.CARBONFLUX_KV.get('chain');
   const readingsRaw = await env.CARBONFLUX_KV.get('readings');
+  const incidentsRaw = await env.CARBONFLUX_KV.get('incidents');
   const chain = chainRaw ? JSON.parse(chainRaw) : [];
   const readings = readingsRaw ? JSON.parse(readingsRaw) : [];
+  const incidents = incidentsRaw ? JSON.parse(incidentsRaw) : [];
   const violations = chain.filter((b) => b.violation).length;
+  const incidentStats = computeIncidentStats(incidents);
 
   return jsonResponse(
     {
@@ -309,6 +577,9 @@ async function handleStatus(env, corsHeaders) {
       chain_length: chain.length,
       readings_count: readings.length,
       violations_count: violations,
+      incidents_open: incidentStats.open,
+      incidents_unacknowledged: incidentStats.open_unacknowledged,
+      incidents_total: incidentStats.total,
       timestamp: Date.now(),
     },
     200,
@@ -330,6 +601,8 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
+    const acknowledgeMatch = path.match(/^\/incidents\/([^/]+)\/acknowledge$/);
+    const resolveMatch = path.match(/^\/incidents\/([^/]+)\/resolve$/);
 
     try {
       if (path === '/ingest' && method === 'POST') return handleIngest(request, env, corsHeaders);
@@ -337,6 +610,26 @@ export default {
       if (path === '/chain' && method === 'GET') return handleChain(request, env, corsHeaders);
       if (path === '/latest' && method === 'GET') return handleLatest(request, env, corsHeaders);
       if (path === '/violations' && method === 'GET') return handleViolations(request, env, corsHeaders);
+      if (path === '/incidents' && method === 'GET') return handleIncidents(request, env, corsHeaders);
+      if (path === '/incident-stats' && method === 'GET') return handleIncidentStats(env, corsHeaders);
+      if (acknowledgeMatch && method === 'POST') {
+        return handleIncidentAction(
+          request,
+          env,
+          corsHeaders,
+          decodeURIComponent(acknowledgeMatch[1]),
+          'acknowledge',
+        );
+      }
+      if (resolveMatch && method === 'POST') {
+        return handleIncidentAction(
+          request,
+          env,
+          corsHeaders,
+          decodeURIComponent(resolveMatch[1]),
+          'resolve',
+        );
+      }
       if (path === '/audit' && method === 'GET') return handleAudit(request, env, corsHeaders);
       if (path === '/status' && method === 'GET') return handleStatus(env, corsHeaders);
 

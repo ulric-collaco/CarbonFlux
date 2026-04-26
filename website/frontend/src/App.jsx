@@ -4,6 +4,7 @@ import Navbar from './components/Navbar.jsx'
 import LiveMonitor from './pages/LiveMonitor.jsx'
 import BlockchainLog from './pages/BlockchainLog.jsx'
 import ChainAudit from './pages/ChainAudit.jsx'
+import IncidentCenter from './pages/IncidentCenter.jsx'
 import { api } from './api.js'
 
 function ScrollToTop() {
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/monitor" element={<LiveMonitor />} />
         <Route path="/chain"   element={<BlockchainLog />} />
         <Route path="/audit"   element={<ChainAudit />} />
+        <Route path="/incidents" element={<IncidentCenter />} />
         {/* Fallback */}
         <Route path="*" element={
           <div style={{

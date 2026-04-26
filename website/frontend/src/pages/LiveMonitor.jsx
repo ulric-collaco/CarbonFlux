@@ -178,6 +178,13 @@ export default function LiveMonitor() {
               accentColor={violationCount > 0 ? '#FF2D2D' : '#555'}
               subLabel={`Threshold: ${PPM_VIOLATION_THRESHOLD} ppm`}
             />
+            <KPICard
+              label="OPEN INCIDENTS"
+              value={status?.incidents_open ?? 0}
+              unit="alerts"
+              accentColor={(status?.incidents_open ?? 0) > 0 ? '#FF8C00' : '#555'}
+              subLabel={`${status?.incidents_unacknowledged ?? 0} unacknowledged`}
+            />
           </div>
 
           <div style={{ padding: '0 20px', marginTop: 16 }}>

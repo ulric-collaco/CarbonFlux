@@ -310,6 +310,49 @@ body,
   gap: 0;
 }
 
+.incident-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  border-bottom: 2px solid #111;
+}
+
+.incident-list-wrap {
+  padding: 14px;
+}
+
+.incident-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.incident-card {
+  padding: 14px;
+}
+
+.incident-detail-grid {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.incident-label {
+  font-family: var(--font-condensed);
+  font-size: 10px;
+  color: #555;
+  letter-spacing: 0.12em;
+  margin-bottom: 4px;
+}
+
+.incident-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #d0d0d0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
 .stats-card {
   padding: 14px 12px;
   border-bottom: 1px solid #111;
@@ -513,6 +556,28 @@ body,
 
   .blockchain-stats {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .incident-kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  }
+
+  .incident-list-wrap {
+    padding: 24px;
+  }
+
+  .incident-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .incident-card {
+    padding: 16px;
+  }
+
+  .incident-detail-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
   }
 
   .stats-card {

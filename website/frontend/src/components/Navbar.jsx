@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 
 const NAV_LINKS = [
   { label: 'LIVE MONITOR', path: '/' },
+  { label: 'INCIDENT CENTER', path: '/incidents' },
   { label: 'BLOCKCHAIN LOG', path: '/chain' },
   { label: 'CHAIN AUDIT', path: '/audit' },
 ]
@@ -12,6 +13,7 @@ export default function Navbar({ workerStatus }) {
 
   const chainLen = workerStatus?.chain_length ?? '–'
   const violations = workerStatus?.violations_count ?? 0
+  const unacknowledgedIncidents = workerStatus?.incidents_unacknowledged ?? 0
 
   return (
     <header style={{
@@ -105,6 +107,21 @@ export default function Navbar({ workerStatus }) {
                     letterSpacing: '0.15em',
                   }}>
                     ⚠ {violations} VIOLATION{violations > 1 ? 'S' : ''}
+                  </div>
+                )}
+
+                {unacknowledgedIncidents > 0 && (
+                  <div className="status-chip pulse-red" style={{
+                    padding: '5px 10px',
+                    background: 'rgba(255,140,0,0.12)',
+                    border: '1px solid rgba(255,140,0,0.45)',
+                    fontFamily: 'var(--font-condensed)',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    color: '#FF8C00',
+                    letterSpacing: '0.15em',
+                  }}>
+                    ! {unacknowledgedIncidents} UNACK INCIDENT{unacknowledgedIncidents > 1 ? 'S' : ''}
                   </div>
                 )}
 
