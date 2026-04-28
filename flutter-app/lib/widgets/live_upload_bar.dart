@@ -31,7 +31,7 @@ class LiveUploadBar extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0B6B53).withOpacity(0.1),
+            color: const Color(0xFF0B6B53).withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
