@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -82,7 +83,7 @@ class Esp32ApiService {
   }
 
   Future<List<DiscoveredEsp32Device>> discoverDevices({String? hintIp}) async {
-    final candidates = _buildDiscoveryCandidates(hintIp);
+    final candidates = await _buildDiscoveryCandidates(hintIp);
     if (candidates.isEmpty) return const [];
 
     const batchSize = 24;
@@ -122,7 +123,7 @@ class Esp32ApiService {
     return found;
   }
 
-  List<String> _buildDiscoveryCandidates(String? hintIp) {
+  Future<List<String>> _buildDiscoveryCandidates(String? hintIp) async {
     final candidates = <String>[];
     final seen = <String>{};
 
@@ -131,6 +132,23 @@ class Esp32ApiService {
         candidates.add(ip);
       }
     }
+
+    // Local interfaces (including Mobile Hotspot interface: swlan0, ap0, etc.)
+    try {
+      final interfaces = await NetworkInterface.list();
+      for (final interface in interfaces) {
+        for (final addr in interface.addresses) {
+          if (addr.type == InternetAddressType.IPv4) {
+            final prefix = _extractPrefix(addr.address);
+            if (prefix != null) {
+              for (var host = 2; host <= 254; host++) {
+                add('$prefix.$host');
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
 
     // Known static targets from firmware first.
     add('192.168.43.77');
