@@ -35,6 +35,18 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     super.dispose();
   }
 
+  Future<void> _startMockDemo() async {
+    ref.read(mockModeProvider.notifier).state = true;
+    _ipController.text = '192.168.0.77';
+
+    await Future<void>.delayed(Duration.zero);
+    if (!mounted) return;
+
+    final controller = ref.read(carbonfluxControllerProvider.notifier);
+    controller.setTransport(ConnectionTransport.wifi);
+    await controller.connect(_ipController.text);
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(carbonfluxControllerProvider);
@@ -87,8 +99,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                           color: CarbonFluxColors.yellow,
                         ),
                         const SizedBox(height: 18),
-                        const Text('CARBONFLUX',
-                            style: CarbonFluxText.display),
+                        const Text('CARBONFLUX', style: CarbonFluxText.display),
                         const SizedBox(height: 8),
                         const Text(
                           'INDUSTRIAL EMISSION MONITOR',
@@ -137,13 +148,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     _buildBluetoothSection(state, controller),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    HudPanel(
-                      accentColor: CarbonFluxColors.red,
-                      child: Text(
-                        state.errorMessage!,
-                        style: const TextStyle(color: CarbonFluxColors.red),
-                      ),
-                    ),
+                    _buildRecoveryPanel(state, controller, isMockMode),
                   ],
                 ],
               ),
@@ -281,6 +286,92 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  Widget _buildRecoveryPanel(
+    CarbonfluxAppState state,
+    CarbonfluxController controller,
+    bool isMockMode,
+  ) {
+    final isWifi = state.transport == ConnectionTransport.wifi;
+    final isBusy = state.isConnecting ||
+        state.isDiscoveringWifi ||
+        state.isDiscoveringBluetooth;
+    final savedIp = state.savedIp;
+
+    return HudPanel(
+      accentColor: CarbonFluxColors.red,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const HudHeader(
+            title: 'ESP disconnected',
+            subtitle: 'Recover the demo link or switch connection mode',
+          ),
+          const SizedBox(height: 12),
+          Text(
+            state.errorMessage ?? 'Connection lost. Choose a recovery action.',
+            style: const TextStyle(color: CarbonFluxColors.red),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              if (isWifi && savedIp != null)
+                FilledButton.icon(
+                  onPressed: isBusy ? null : controller.reconnectSavedIp,
+                  icon: const Icon(Icons.restart_alt_rounded),
+                  label: Text('RECONNECT $savedIp'),
+                ),
+              if (isWifi)
+                OutlinedButton.icon(
+                  onPressed: isBusy
+                      ? null
+                      : () => controller.discoverWifiDevices(
+                            hintIp: _ipController.text,
+                          ),
+                  icon: const Icon(Icons.travel_explore_rounded),
+                  label: const Text('SCAN WIFI'),
+                )
+              else
+                OutlinedButton.icon(
+                  onPressed:
+                      isBusy ? null : controller.discoverBluetoothDevices,
+                  icon: const Icon(Icons.bluetooth_searching_rounded),
+                  label: const Text('SCAN BLE'),
+                ),
+              OutlinedButton.icon(
+                onPressed: isBusy
+                    ? null
+                    : () {
+                        final next = isWifi
+                            ? ConnectionTransport.bluetooth
+                            : ConnectionTransport.wifi;
+                        controller.setTransport(next);
+                        if (next == ConnectionTransport.wifi) {
+                          _autoDiscoverWifi(force: true);
+                        }
+                      },
+                icon:
+                    Icon(isWifi ? Icons.bluetooth_rounded : Icons.wifi_rounded),
+                label: Text(isWifi ? 'TRY BLE' : 'TRY WIFI'),
+              ),
+              OutlinedButton.icon(
+                onPressed: controller.clearError,
+                icon: const Icon(Icons.close_rounded),
+                label: const Text('CLEAR'),
+              ),
+              FilledButton.icon(
+                onPressed: isBusy || isMockMode ? null : _startMockDemo,
+                icon: const Icon(Icons.science_outlined),
+                label: const Text('MOCK DEMO'),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

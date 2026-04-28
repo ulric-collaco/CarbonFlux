@@ -36,4 +36,3 @@ final carbonfluxControllerProvider =
     ref.watch(backendServiceProvider),
   );
 });
-

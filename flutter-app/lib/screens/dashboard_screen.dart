@@ -174,13 +174,11 @@ class DashboardScreen extends ConsumerWidget {
                       fontFamily: 'monospace',
                     ),
                   ),
-
                   if (state.uploadingStatus != null || state.isUploading)
                     LiveUploadBar(
                       isUploading: state.isUploading,
                       status: state.uploadingStatus,
                     ),
-
                   const SizedBox(height: 14),
                   if (latest != null) ReadingCard(reading: latest),
                   const SizedBox(height: 14),

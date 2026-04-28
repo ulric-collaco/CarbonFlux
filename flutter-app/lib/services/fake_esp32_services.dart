@@ -82,7 +82,7 @@ class FakeEsp32ApiService extends Esp32ApiService {
     await Future.delayed(const Duration(seconds: 1));
     return const [
       DiscoveredEsp32Device(
-        ip: '192.168.0.999 (Mock)',
+        ip: '192.168.0.77',
         status: DeviceStatus(
           deviceId: 'MOCK-DEVICE',
           state: 'STANDBY',

@@ -14,8 +14,7 @@ class ReadingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final ppm = reading.ppmProxy;
     final isHigh = ppm > 1000;
-    final valueColor =
-        isHigh ? CarbonFluxColors.red : CarbonFluxColors.green;
+    final valueColor = isHigh ? CarbonFluxColors.red : CarbonFluxColors.green;
 
     return HudPanel(
       accentColor: valueColor,
@@ -56,7 +55,8 @@ class ReadingCard extends StatelessWidget {
             spacing: 18,
             children: [
               _metric('RAW ADC', reading.rawAdc.toString(), Colors.white),
-              _metric('NONCE', reading.nonce.toString(), CarbonFluxColors.textSecondary),
+              _metric('NONCE', reading.nonce.toString(),
+                  CarbonFluxColors.textSecondary),
               _metric(
                 'TIMESTAMP',
                 DateFormat('HH:mm:ss').format(
@@ -156,8 +156,7 @@ class ReadingCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: CarbonFluxText.label),
+        Text(label, style: CarbonFluxText.label),
         const SizedBox(height: 4),
         Text(
           value,

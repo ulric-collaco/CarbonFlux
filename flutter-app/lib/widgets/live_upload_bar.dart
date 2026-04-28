@@ -45,7 +45,8 @@ class LiveUploadBar extends StatelessWidget {
             ),
             const SizedBox(width: 12),
           ] else if (failed) ...[
-            const Icon(Icons.error_outline, size: 20, color: CarbonFluxColors.red),
+            const Icon(Icons.error_outline,
+                size: 20, color: CarbonFluxColors.red),
             const SizedBox(width: 12),
           ] else if (verified) ...[
             const Icon(
