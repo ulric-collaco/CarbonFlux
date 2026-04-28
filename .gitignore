@@ -1,7 +1,12 @@
 # ─── Agent / tooling ────────────────────────────────────────────────
 .agents/
 skills-lock.json
+**/*skill*.md
+**/*.prompt.md
+**/*.agent.md
+**/*.instructions.md
 .gradle-home/
+.aider-desk/
 
 # ─── Secrets — NEVER commit these ───────────────────────────────────
 .env

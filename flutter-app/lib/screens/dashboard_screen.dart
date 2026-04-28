@@ -9,6 +9,7 @@ import '../widgets/error_banner.dart';
 import '../widgets/ppm_line_chart.dart';
 import '../widgets/reading_card.dart';
 import '../widgets/state_badge.dart';
+import '../widgets/live_upload_bar.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -171,6 +172,13 @@ class DashboardScreen extends ConsumerWidget {
                     style:
                         const TextStyle(color: Color(0xFF90A0B9), fontSize: 12),
                   ),
+                  
+                  if (state.uploadingStatus != null || state.isUploading)
+                    LiveUploadBar(
+                      isUploading: state.isUploading,
+                      status: state.uploadingStatus,
+                    ),
+                    
                   const SizedBox(height: 14),
                   if (latest != null) ReadingCard(reading: latest),
                   const SizedBox(height: 14),

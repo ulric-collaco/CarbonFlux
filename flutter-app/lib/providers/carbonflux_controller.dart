@@ -35,6 +35,7 @@ class CarbonfluxAppState {
     this.lastUpdated,
     this.isUploading = false,
     this.lastUploadResult,
+    this.uploadingStatus,
   });
 
   final String? savedIp;
@@ -59,6 +60,7 @@ class CarbonfluxAppState {
   final DateTime? lastUpdated;
   final bool isUploading;
   final UploadResult? lastUploadResult;
+  final String? uploadingStatus;
 
   CarbonfluxAppState copyWith({
     String? savedIp,
@@ -85,6 +87,8 @@ class CarbonfluxAppState {
     DateTime? lastUpdated,
     bool? isUploading,
     UploadResult? lastUploadResult,
+    String? uploadingStatus,
+    bool clearUploadingStatus = false,
   }) {
     return CarbonfluxAppState(
       savedIp: savedIp ?? this.savedIp,
@@ -117,6 +121,7 @@ class CarbonfluxAppState {
       lastUpdated: lastUpdated ?? this.lastUpdated,
       isUploading: isUploading ?? this.isUploading,
       lastUploadResult: lastUploadResult ?? this.lastUploadResult,
+      uploadingStatus: clearUploadingStatus ? null : (uploadingStatus ?? this.uploadingStatus),
     );
   }
 
@@ -627,12 +632,31 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   }
 
   Future<void> _uploadSingleReading(SensorReading reading) async {
+    state = state.copyWith(isUploading: true, uploadingStatus: 'Hashing & Signing data...');
+    // Minimal delay to let the UI show the first step to users for demo purposes
+    await Future.delayed(const Duration(milliseconds: 300));
+    
+    state = state.copyWith(uploadingStatus: 'Sending payload to Backend...');
+    
     try {
       final result = await _backend.uploadReadingLive(reading);
       if (result.success) {
-         state = state.copyWith(lastUploadResult: result);
+         state = state.copyWith(
+           lastUploadResult: result,
+           uploadingStatus: 'Verified! Block #${result.lastBlockIndex} updated.',
+         );
+      } else {
+         state = state.copyWith(uploadingStatus: 'Upload failed: ${result.error}');
       }
-    } catch (_) {}
+    } catch (_) {
+      state = state.copyWith(uploadingStatus: 'Upload failed (Network Error)');
+    }
+
+    // Leave the success/fail message visible for a short period before clearing
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (state.uploadingStatus != null) {
+      state = state.copyWith(isUploading: false, clearUploadingStatus: true);
+    }
   }
 
   void _startPolling() {
