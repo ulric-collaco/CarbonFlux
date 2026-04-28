@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/carbonflux_controller.dart';
+import '../theme/carbonflux_theme.dart';
+import '../widgets/hud_panel.dart';
 
 class ConnectionScreen extends ConsumerStatefulWidget {
   const ConnectionScreen({super.key});
@@ -41,16 +43,20 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
         actions: [
           Row(
             children: [
-              const Text('Mock Mode (Test)',
-                  style: TextStyle(color: Colors.amber, fontSize: 12)),
+              const Text(
+                'MOCK MODE',
+                style: TextStyle(
+                  color: CarbonFluxColors.yellow,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1,
+                ),
+              ),
               Switch(
                 value: isMockMode,
-                activeThumbColor: Colors.amber,
                 onChanged: (val) {
                   ref.read(mockModeProvider.notifier).state = val;
                 },
@@ -64,27 +70,42 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 520),
             child: Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(
-                    Icons.factory_outlined,
-                    size: 50,
-                    color: Color(0xFF32D9FF),
-                  ),
-                  const SizedBox(height: 18),
-                  const Text(
-                    'CarbonFlux',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 34, fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Industrial Emission Monitor',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF91A0B9), fontSize: 14),
+                  HudPanel(
+                    accentColor: CarbonFluxColors.yellow,
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(
+                          Icons.factory_outlined,
+                          size: 34,
+                          color: CarbonFluxColors.yellow,
+                        ),
+                        const SizedBox(height: 18),
+                        const Text('CARBONFLUX',
+                            style: CarbonFluxText.display),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'INDUSTRIAL EMISSION MONITOR',
+                          style: CarbonFluxText.label,
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          height: 1,
+                          color: CarbonFluxColors.borderBright,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          state.statusMessage,
+                          style: CarbonFluxText.mono,
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 20),
                   SegmentedButton<ConnectionTransport>(
@@ -116,10 +137,12 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     _buildBluetoothSection(state, controller),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    Text(
-                      state.errorMessage!,
-                      style: const TextStyle(color: Colors.redAccent),
-                      textAlign: TextAlign.center,
+                    HudPanel(
+                      accentColor: CarbonFluxColors.red,
+                      child: Text(
+                        state.errorMessage!,
+                        style: const TextStyle(color: CarbonFluxColors.red),
+                      ),
                     ),
                   ],
                 ],
@@ -151,13 +174,25 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        TextField(
-          controller: _ipController,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: 'ESP32 IP Address',
-            hintText: '192.168.1.77',
-            prefixIcon: Icon(Icons.router_rounded),
+        HudPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const HudHeader(
+                title: 'WiFi relay',
+                subtitle: 'ESP32 HTTP endpoint discovery',
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _ipController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'ESP32 IP Address',
+                  hintText: '192.168.1.77',
+                  prefixIcon: Icon(Icons.router_rounded),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 10),
@@ -207,24 +242,19 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         if (state.discoveredWifiDevices.isNotEmpty) ...[
           const SizedBox(height: 12),
           const Text(
-            'Discovered IPs',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF91A0B9),
-              fontWeight: FontWeight.w600,
-            ),
+            'DISCOVERED IPS',
+            style: CarbonFluxText.label,
           ),
           const SizedBox(height: 8),
           for (final device in state.discoveredWifiDevices)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                color: const Color(0xFF111722),
+              child: HudPanel(
                 child: ListTile(
                   dense: true,
                   leading: const Icon(
                     Icons.memory_rounded,
-                    color: Color(0xFF32D9FF),
+                    color: CarbonFluxColors.yellow,
                   ),
                   title: Text(device.ip),
                   subtitle: Text(
@@ -261,10 +291,11 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Text(
-          'Scan nearby BLE devices and connect to CarbonFlux-ESP32.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: Color(0xFF91A0B9)),
+        const HudPanel(
+          child: HudHeader(
+            title: 'Bluetooth uplink',
+            subtitle: 'Scan nearby BLE devices and connect to CarbonFlux-ESP32',
+          ),
         ),
         const SizedBox(height: 14),
         OutlinedButton.icon(
@@ -287,19 +318,14 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
         if (state.discoveredBluetoothDevices.isNotEmpty) ...[
           const SizedBox(height: 12),
           const Text(
-            'Nearby Bluetooth Devices',
-            style: TextStyle(
-              fontSize: 13,
-              color: Color(0xFF91A0B9),
-              fontWeight: FontWeight.w600,
-            ),
+            'NEARBY BLUETOOTH DEVICES',
+            style: CarbonFluxText.label,
           ),
           const SizedBox(height: 8),
           for (final device in state.discoveredBluetoothDevices)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
-              child: Card(
-                color: const Color(0xFF111722),
+              child: HudPanel(
                 child: ListTile(
                   dense: true,
                   leading: Icon(
@@ -307,8 +333,8 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                         ? Icons.bluetooth_connected_rounded
                         : Icons.bluetooth_rounded,
                     color: device.isLikelyTarget
-                        ? const Color(0xFF32D9FF)
-                        : const Color(0xFF91A0B9),
+                        ? CarbonFluxColors.yellow
+                        : CarbonFluxColors.textSecondary,
                   ),
                   title: Text(device.name),
                   subtitle: Text('${device.id} • RSSI ${device.rssi}'),

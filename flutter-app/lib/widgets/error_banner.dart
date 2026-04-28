@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/carbonflux_theme.dart';
+
 class ErrorBanner extends StatelessWidget {
   const ErrorBanner({super.key, required this.message, this.onDismiss});
 
@@ -12,13 +14,13 @@ class ErrorBanner extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.redAccent.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.redAccent.withValues(alpha: 0.65)),
+        color: CarbonFluxColors.red.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: CarbonFluxColors.red.withValues(alpha: 0.65)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+          const Icon(Icons.warning_amber_rounded, color: CarbonFluxColors.red),
           const SizedBox(width: 10),
           Expanded(
             child: Text(message, style: const TextStyle(color: Colors.white)),

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/carbonflux_theme.dart';
+
 class ControlButton extends StatelessWidget {
   const ControlButton({
     super.key,
@@ -22,13 +24,16 @@ class ControlButton extends StatelessWidget {
         backgroundColor: color.withValues(alpha: 0.16),
         foregroundColor: color,
         disabledBackgroundColor: color.withValues(alpha: 0.06),
-        disabledForegroundColor: color.withValues(alpha: 0.4),
+        disabledForegroundColor: CarbonFluxColors.textMuted,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         side: BorderSide(color: color.withValues(alpha: 0.6)),
       ),
       icon: Icon(icon ?? Icons.play_arrow_rounded, size: 18),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+      label: Text(
+        label.toUpperCase(),
+        style: const TextStyle(fontWeight: FontWeight.w900, letterSpacing: 0.7),
+      ),
     );
   }
 }

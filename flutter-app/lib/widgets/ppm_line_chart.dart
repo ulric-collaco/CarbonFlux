@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../models/sensor_reading.dart';
+import '../theme/carbonflux_theme.dart';
 
 class PpmLineChart extends StatelessWidget {
   const PpmLineChart({super.key, required this.readings});
@@ -14,7 +15,7 @@ class PpmLineChart extends StatelessWidget {
       return const Center(
         child: Text(
           'No readings yet. Start detection to see live graph.',
-          style: TextStyle(color: Color(0xFF90A0B9)),
+          style: TextStyle(color: CarbonFluxColors.textSecondary),
         ),
       );
     }
@@ -43,11 +44,11 @@ class PpmLineChart extends StatelessWidget {
           drawVerticalLine: true,
           horizontalInterval: 250,
           getDrawingHorizontalLine: (_) => const FlLine(
-            color: Color(0xFF1E2A3B),
+            color: Color(0xFF222222),
             strokeWidth: 1,
           ),
           getDrawingVerticalLine: (_) => const FlLine(
-            color: Color(0xFF131D2C),
+            color: Color(0xFF1A1A1A),
             strokeWidth: 1,
           ),
         ),
@@ -59,7 +60,11 @@ class PpmLineChart extends StatelessWidget {
               interval: 250,
               getTitlesWidget: (value, _) => Text(
                 value.toInt().toString(),
-                style: const TextStyle(fontSize: 11, color: Color(0xFF8BA0BC)),
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: CarbonFluxColors.textSecondary,
+                  fontFamily: 'monospace',
+                ),
               ),
             ),
           ),
@@ -75,18 +80,22 @@ class PpmLineChart extends StatelessWidget {
         ),
         borderData: FlBorderData(
           show: true,
-          border: Border.all(color: const Color(0xFF223046)),
+          border: Border.all(color: CarbonFluxColors.border),
         ),
         extraLinesData: ExtraLinesData(horizontalLines: [
           HorizontalLine(
             y: 1000,
-            color: Colors.redAccent.withValues(alpha: 0.5),
+            color: CarbonFluxColors.red.withValues(alpha: 0.65),
             strokeWidth: 1.3,
             dashArray: [6, 4],
             label: HorizontalLineLabel(
               show: true,
               alignment: Alignment.topRight,
-              style: const TextStyle(color: Colors.redAccent, fontSize: 10),
+              style: const TextStyle(
+                color: CarbonFluxColors.red,
+                fontSize: 10,
+                fontFamily: 'monospace',
+              ),
               labelResolver: (_) => 'threshold',
             ),
           ),
@@ -95,7 +104,7 @@ class PpmLineChart extends StatelessWidget {
           LineChartBarData(
             spots: spots,
             isCurved: true,
-            color: const Color(0xFF32D9FF),
+            color: CarbonFluxColors.green,
             barWidth: 2.2,
             belowBarData: BarAreaData(
               show: true,
@@ -103,8 +112,8 @@ class PpmLineChart extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color(0xFF32D9FF).withValues(alpha: 0.35),
-                  const Color(0xFF32D9FF).withValues(alpha: 0.05),
+                  CarbonFluxColors.green.withValues(alpha: 0.25),
+                  CarbonFluxColors.green.withValues(alpha: 0.03),
                 ],
               ),
             ),
@@ -113,7 +122,7 @@ class PpmLineChart extends StatelessWidget {
               checkToShowDot: (spot, _) => spot.y > 1000,
               getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
                 radius: 3,
-                color: Colors.redAccent,
+                color: CarbonFluxColors.red,
                 strokeWidth: 1,
                 strokeColor: Colors.white,
               ),

@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 import '../models/sensor_reading.dart';
 import '../providers/app_providers.dart';
 import '../providers/carbonflux_controller.dart';
+import '../theme/carbonflux_theme.dart';
 import '../widgets/error_banner.dart';
+import '../widgets/hud_panel.dart';
+import '../widgets/live_upload_bar.dart';
 import '../widgets/ppm_line_chart.dart';
 import '../widgets/reading_card.dart';
 import '../widgets/state_badge.dart';
-import '../widgets/live_upload_bar.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -63,7 +65,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CarbonFlux Control Center'),
+        title: const Text('CARBONFLUX CONTROL'),
         actions: [
           IconButton(
             onPressed: controller.disconnect,
@@ -88,12 +90,8 @@ class DashboardScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111722),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF1F2A3A)),
-                    ),
+                  HudPanel(
+                    accentColor: stateColor(currentState),
                     padding: const EdgeInsets.all(16),
                     child: Wrap(
                       runSpacing: 16,
@@ -110,13 +108,14 @@ class DashboardScreen extends ConsumerWidget {
                                   'carbonflux-001',
                               style: const TextStyle(
                                 fontSize: 24,
-                                fontWeight: FontWeight.w700,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.6,
                               ),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               state.statusMessage,
-                              style: const TextStyle(color: Color(0xFF90A0B9)),
+                              style: CarbonFluxText.mono,
                             ),
                           ],
                         ),
@@ -125,7 +124,7 @@ class DashboardScreen extends ConsumerWidget {
                           _MetricChip(
                             label: 'WARMUP',
                             value: '${state.warmupRemainingSeconds}s',
-                            color: Colors.amberAccent,
+                            color: CarbonFluxColors.yellow,
                           ),
                         if (currentState == 'DETECTING' ||
                             currentState == 'STOPPED')
@@ -134,7 +133,7 @@ class DashboardScreen extends ConsumerWidget {
                             value: state.streamReadings.isNotEmpty
                                 ? state.streamReadings.length.toString()
                                 : state.readingHistory.length.toString(),
-                            color: Colors.cyanAccent,
+                            color: CarbonFluxColors.blue,
                           ),
                       ],
                     ),
@@ -159,8 +158,8 @@ class DashboardScreen extends ConsumerWidget {
                               : const Icon(Icons.play_circle_outline_rounded),
                           label: Text(
                             state.isDetectionCycleRunning
-                                ? 'Running 15s Detection Cycle...'
-                                : 'Start Detection',
+                                ? 'RUNNING 15S DETECTION CYCLE...'
+                                : 'START DETECTION',
                           ),
                         ),
                       ),
@@ -169,60 +168,57 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   Text(
                     'Last warmup: ${_lastWarmupLabel(state.lastWarmupCompletedAt)}',
-                    style:
-                        const TextStyle(color: Color(0xFF90A0B9), fontSize: 12),
+                    style: const TextStyle(
+                      color: CarbonFluxColors.textSecondary,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
+                    ),
                   ),
-                  
+
                   if (state.uploadingStatus != null || state.isUploading)
                     LiveUploadBar(
                       isUploading: state.isUploading,
                       status: state.uploadingStatus,
                     ),
-                    
+
                   const SizedBox(height: 14),
                   if (latest != null) ReadingCard(reading: latest),
                   const SizedBox(height: 14),
-                  Container(
-                    height: 300,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111722),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF1F2A3A)),
-                    ),
+                  HudPanel(
+                    accentColor: CarbonFluxColors.green,
                     padding: const EdgeInsets.fromLTRB(12, 12, 16, 12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'PPM Trend (Live)',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
+                    child: SizedBox(
+                      height: 300,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Text(
+                                'PPM TREND (LIVE)',
+                                style: CarbonFluxText.section,
                               ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              currentState,
-                              style: TextStyle(color: stateColor(currentState)),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Expanded(
-                            child:
-                                PpmLineChart(readings: state.readingHistory)),
-                      ],
+                              const Spacer(),
+                              Text(
+                                currentState,
+                                style: TextStyle(
+                                  color: stateColor(currentState),
+                                  fontFamily: 'monospace',
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          Expanded(
+                            child: PpmLineChart(readings: state.readingHistory),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 14),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF111722),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: const Color(0xFF1F2A3A)),
-                    ),
+                  HudPanel(
                     padding: const EdgeInsets.all(14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,9 +226,8 @@ class DashboardScreen extends ConsumerWidget {
                         Row(
                           children: [
                             const Text(
-                              'Stream View',
-                              style: TextStyle(
-                                  fontSize: 15, fontWeight: FontWeight.w700),
+                              'STREAM VIEW',
+                              style: CarbonFluxText.section,
                             ),
                             const Spacer(),
                             TextButton.icon(
@@ -250,19 +245,19 @@ class DashboardScreen extends ConsumerWidget {
                             _MetricChip(
                               label: 'MAX PPM',
                               value: analytics.maxPpm.toStringAsFixed(1),
-                              color: Colors.cyanAccent,
+                              color: CarbonFluxColors.blue,
                             ),
                             _MetricChip(
                               label: 'AVG PPM',
                               value: analytics.avgPpm.toStringAsFixed(1),
-                              color: const Color(0xFF7CD4FF),
+                              color: CarbonFluxColors.green,
                             ),
                             _MetricChip(
                               label: 'VIOLATIONS',
                               value: analytics.violationCount.toString(),
                               color: analytics.violationCount > 0
-                                  ? Colors.redAccent
-                                  : Colors.greenAccent,
+                                  ? CarbonFluxColors.red
+                                  : CarbonFluxColors.green,
                             ),
                             _MetricChip(
                               label: 'LAST VIOLATION',
@@ -270,8 +265,8 @@ class DashboardScreen extends ConsumerWidget {
                                   ? 'none'
                                   : '${analytics.lastViolationPpm!.toStringAsFixed(1)} ppm',
                               color: analytics.lastViolationPpm == null
-                                  ? const Color(0xFF90A0B9)
-                                  : Colors.redAccent,
+                                  ? CarbonFluxColors.textSecondary
+                                  : CarbonFluxColors.red,
                             ),
                           ],
                         ),
@@ -279,7 +274,9 @@ class DashboardScreen extends ConsumerWidget {
                         if (state.streamReadings.isEmpty)
                           const Text(
                             'No stream data loaded yet.',
-                            style: TextStyle(color: Color(0xFF90A0B9)),
+                            style: TextStyle(
+                              color: CarbonFluxColors.textSecondary,
+                            ),
                           )
                         else
                           ...state.streamReadings.reversed.take(8).map((r) {
@@ -301,17 +298,18 @@ class DashboardScreen extends ConsumerWidget {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: Colors.redAccent.withAlpha(46),
-                                        borderRadius: BorderRadius.circular(12),
+                                        color:
+                                            CarbonFluxColors.red.withAlpha(46),
+                                        borderRadius: BorderRadius.circular(4),
                                         border: Border.all(
-                                          color:
-                                              Colors.redAccent.withAlpha(165),
+                                          color: CarbonFluxColors.red
+                                              .withAlpha(165),
                                         ),
                                       ),
                                       child: const Text(
                                         'VIOLATION',
                                         style: TextStyle(
-                                          color: Colors.redAccent,
+                                          color: CarbonFluxColors.red,
                                           fontSize: 11,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -323,9 +321,9 @@ class DashboardScreen extends ConsumerWidget {
                                   Text('nonce ${r.nonce} | ts ${r.timestamp}'),
                               trailing: high
                                   ? const Icon(Icons.warning_amber_rounded,
-                                      color: Colors.redAccent)
+                                      color: CarbonFluxColors.red)
                                   : const Icon(Icons.check_circle_outline,
-                                      color: Colors.greenAccent),
+                                      color: CarbonFluxColors.green),
                             );
                           }),
                       ],
@@ -357,18 +355,22 @@ class _MetricChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: color.withAlpha(38),
-        borderRadius: BorderRadius.circular(12),
+        color: color.withAlpha(30),
+        borderRadius: BorderRadius.circular(4),
         border: Border.all(color: color.withAlpha(128)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11)),
+          Text(label, style: CarbonFluxText.label),
           const SizedBox(width: 8),
           Text(
             value,
-            style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: color,
+              fontFamily: 'monospace',
+            ),
           ),
         ],
       ),
