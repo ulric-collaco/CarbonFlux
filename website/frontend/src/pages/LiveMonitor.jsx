@@ -43,12 +43,17 @@ export default function LiveMonitor() {
 
   const poll = useCallback(async () => {
     try {
+      // First try to hit the backend reading
       const [readData, statData] = await Promise.all([
         api.readings(MAX_CHART_POINTS),
         api.status(),
       ])
-      // readings from API are newest-first; reverse for chart (oldest → newest)
-      const sorted = [...(readData.readings || [])].reverse()
+
+      // Extract the readings array from the response object
+      // The API returns { readings: [...], total: X }
+      const readingList = Array.isArray(readData.readings) ? readData.readings : (Array.isArray(readData) ? readData : [])
+      const sorted = [...readingList].reverse()
+
       setReadings(sorted)
       setStatus(statData)
       setError(null)
