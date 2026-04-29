@@ -14,6 +14,24 @@ function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
   if (!d) return null
+  
+  if (d.isGap) {
+    return (
+      <div style={{
+        background: '#1a1800', border: '1px solid #FFD600',
+        padding: '10px 14px',
+        fontFamily: 'var(--font-mono)', fontSize: 11,
+      }}>
+        <div style={{ color: '#FFD600', marginBottom: 4, letterSpacing: '0.1em', fontWeight: 'bold' }}>
+          CONNECTION DROP
+        </div>
+        <div style={{ color: '#aaa' }}>
+          GAP: {(d.gapDuration / 1000).toFixed(0)}s
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       background: '#111', border: '1px solid #2a2a2a',
@@ -52,9 +70,30 @@ export default function LiveMonitor() {
       // Extract the readings array from the response object
       // The API returns { readings: [...], total: X }
       const readingList = Array.isArray(readData.readings) ? readData.readings : (Array.isArray(readData) ? readData : [])
-      const sorted = [...readingList].reverse()
+      const rawSorted = [...readingList].reverse()
 
-      setReadings(sorted)
+      const processed = []
+      for (let i = 0; i < rawSorted.length; i++) {
+        const curr = rawSorted[i]
+        if (i > 0) {
+          const prev = rawSorted[i - 1]
+          const prevTime = new Date(prev.received_at).getTime()
+          const currTime = new Date(curr.received_at).getTime()
+          const diffMs = currTime - prevTime
+          if (diffMs > 30000) {
+            processed.push({
+              isGap: true,
+              received_at: new Date(prevTime + diffMs / 2).toISOString(),
+              ppm_value: null,
+              avg_ppm: null,
+              gapDuration: diffMs
+            })
+          }
+        }
+        processed.push(curr)
+      }
+
+      setReadings(processed)
       setStatus(statData)
       setError(null)
       setLastPoll(new Date())
@@ -309,7 +348,11 @@ export default function LiveMonitor() {
                   <CartesianGrid stroke="#1a1a1a" strokeDasharray="3 0" />
                   <XAxis
                     dataKey="received_at"
-                    tickFormatter={(v) => new Date(v).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                    tickFormatter={(v) => {
+                      const item = readings.find(r => r.received_at === v);
+                      if (item?.isGap) return 'GAP';
+                      return new Date(v).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    }}
                     tick={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: '#444' }}
                     axisLine={{ stroke: '#2a2a2a' }}
                     tickLine={false}
@@ -328,11 +371,21 @@ export default function LiveMonitor() {
                     strokeDasharray="6 3"
                     label={{ value: 'THRESHOLD', fill: '#FF2D2D', fontSize: 9, fontFamily: 'var(--font-mono)' }}
                   />
+                  {readings.filter(r => r.isGap).map((g, idx) => (
+                    <ReferenceLine
+                      key={`gap-${idx}`}
+                      x={g.received_at}
+                      stroke="#FFD600"
+                      strokeDasharray="4 4"
+                      label={{ value: 'CONNECTION DROP', fill: '#FFD600', fontSize: 9, fontFamily: 'var(--font-mono)', position: 'insideTopLeft' }}
+                    />
+                  ))}
                   <Line
                     type="monotone"
                     dataKey="ppm_value"
                     stroke="#00FF6A"
                     strokeWidth={2}
+                    connectNulls={false}
                     dot={{ r: 2, fill: '#0d0d0d', stroke: '#00FF6A', strokeWidth: 1.5 }}
                     activeDot={{ r: 4, fill: '#00FF6A', stroke: '#0d0d0d', strokeWidth: 2 }}
                   />
@@ -342,6 +395,7 @@ export default function LiveMonitor() {
                     stroke="#FFD600"
                     strokeWidth={1}
                     strokeDasharray="4 2"
+                    connectNulls={false}
                     dot={false}
                     activeDot={false}
                   />
