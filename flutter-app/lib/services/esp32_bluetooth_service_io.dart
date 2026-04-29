@@ -75,7 +75,7 @@ class Esp32BluetoothService {
         final name = _displayName(result);
         final lower = name.toLowerCase();
         final isLikely =
-            lower.contains('carbonflux') || lower.contains('esp32');
+            lower.contains('carbonflux') || lower.contains('esp32') || result.advertisementData.serviceUuids.contains(_serviceUuid);
 
         found[result.device.remoteId.str] = DiscoveredBluetoothDevice(
           id: result.device.remoteId.str,
@@ -227,6 +227,10 @@ class Esp32BluetoothService {
   }
 
   String _displayName(ScanResult result) {
+    if (result.advertisementData.serviceUuids.contains(_serviceUuid)) {
+      return 'CarbonFlux-ESP32';
+    }
+    
     final platformName = result.device.platformName.trim();
     if (platformName.isNotEmpty) {
       return platformName;
@@ -235,6 +239,6 @@ class Esp32BluetoothService {
     if (advName.isNotEmpty) {
       return advName;
     }
-    return 'Unknown Device';
+    return 'Unknown Device (${result.device.remoteId.str})';
   }
 }
