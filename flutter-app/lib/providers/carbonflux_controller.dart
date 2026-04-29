@@ -663,7 +663,10 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
       _pollTicks += 1;
-      await _refreshNow();
+      // Only poll readings when tracking/detection cycle is active.
+      if (state.isDetectionCycleRunning) {
+        await _refreshNow();
+      }
     });
   }
 

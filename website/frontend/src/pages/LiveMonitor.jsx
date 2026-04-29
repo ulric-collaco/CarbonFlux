@@ -8,7 +8,7 @@ import { POLL_INTERVAL_MS, PPM_VIOLATION_THRESHOLD } from '../config.js'
 import { StateBadge, PpmGauge, KPICard } from '../components/Widgets.jsx'
 import { exportData } from '../utils/export.js'
 
-const MAX_CHART_POINTS = 60
+const MAX_CHART_POINTS = 50
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -176,20 +176,6 @@ export default function LiveMonitor() {
               accentColor="#888"
               subLabel="Blockchain entries"
             />
-            <KPICard
-              label="VIOLATIONS"
-              value={status?.violations_count ?? '—'}
-              unit="events"
-              accentColor={violationCount > 0 ? '#FF2D2D' : '#555'}
-              subLabel={`Threshold: ${PPM_VIOLATION_THRESHOLD} ppm`}
-            />
-            <KPICard
-              label="OPEN INCIDENTS"
-              value={status?.incidents_open ?? 0}
-              unit="alerts"
-              accentColor={(status?.incidents_open ?? 0) > 0 ? '#FF8C00' : '#555'}
-              subLabel={`${status?.incidents_unacknowledged ?? 0} unacknowledged`}
-            />
           </div>
 
           <div style={{ padding: '0 20px', marginTop: 16 }}>
@@ -327,6 +313,7 @@ export default function LiveMonitor() {
                     tick={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: '#444' }}
                     axisLine={{ stroke: '#2a2a2a' }}
                     tickLine={false}
+                    minTickGap={30}
                   />
                   <YAxis
                     tick={{ fontFamily: 'var(--font-mono)', fontSize: 9, fill: '#444' }}
@@ -346,7 +333,7 @@ export default function LiveMonitor() {
                     dataKey="ppm_value"
                     stroke="#00FF6A"
                     strokeWidth={2}
-                    dot={false}
+                    dot={{ r: 2, fill: '#0d0d0d', stroke: '#00FF6A', strokeWidth: 1.5 }}
                     activeDot={{ r: 4, fill: '#00FF6A', stroke: '#0d0d0d', strokeWidth: 2 }}
                   />
                   <Line

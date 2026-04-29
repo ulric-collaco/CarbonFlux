@@ -1,5 +1,6 @@
-import 'dart:convert';
+import 'dart:math';
 
+import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
 
@@ -101,11 +102,12 @@ class BackendService {
     // Inject absolute Unix time, since ESP32 only sends uptime from millis() 
     // and Cloudflare checks the timestamp window (±5 mins).
     final unixTime = (DateTime.now().millisecondsSinceEpoch / 1000).round();
+    final randomNonce = Random.secure().nextInt(0x7FFFFFFF); // Generate a unique cryptographically random positive integer for replay defense.
 
     final canonical = _canonicalJson(
       deviceId: reading.deviceId,
       timestamp: unixTime,
-      nonce: reading.nonce,
+      nonce: randomNonce,
       ppmValue: ppmValue,
       avgPpm: avgPpm,
     );
@@ -120,7 +122,7 @@ class BackendService {
     return {
       'device_id': reading.deviceId,
       'timestamp': unixTime,
-      'nonce': reading.nonce,
+      'nonce': randomNonce,
 
       'ppm_value': p,
       'avg_ppm': a,
