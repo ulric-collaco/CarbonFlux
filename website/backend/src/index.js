@@ -230,10 +230,9 @@ function pickHigherSeverity(current, candidate) {
 }
 
 function evaluateSeverity(ppmValue, threshold, durationSeconds) {
+  // Any reading above threshold is immediately CRITICAL
   const ratio = threshold > 0 ? ppmValue / threshold : 0;
-  if (ratio >= 2 || durationSeconds >= 120) return 'CRITICAL';
-  if (ratio >= 1.5 || durationSeconds >= 60) return 'HIGH';
-  if (ratio >= 1.2 || durationSeconds >= 30) return 'MEDIUM';
+  if (ratio >= 1) return 'CRITICAL';
   return 'LOW';
 }
 
