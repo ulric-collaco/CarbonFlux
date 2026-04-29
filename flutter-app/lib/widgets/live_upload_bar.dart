@@ -14,83 +14,129 @@ class LiveUploadBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Render the upload bar consistently. If not actively uploading/status, show "Monitoring..." state.
-    if (!isUploading && status == null) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        margin: const EdgeInsets.only(top: 24),
-        decoration: BoxDecoration(
-          color: Colors.blue.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.blue.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
-            ),
-            const SizedBox(width: 16),
-            Text(
-              'Monitoring Sensor Data...',
-              style: TextStyle(
-                color: Colors.blue[300],
-                fontFamily: 'RobotoMono',
-                fontSize: 13,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final failed = status != null && status!.toLowerCase().contains('failed');
+    final lowerStatus = status?.toLowerCase() ?? '';
+    final failed = lowerStatus.contains('failed');
     final verified =
-        status != null && status!.toLowerCase().contains('verified');
-    final accent = failed ? CarbonFluxColors.red : CarbonFluxColors.green;
+        lowerStatus.contains('verified') || lowerStatus.contains('anchored');
+    final idle = !isUploading && status == null;
+    final accent = failed
+        ? CarbonFluxColors.red
+        : isUploading
+            ? CarbonFluxColors.blue
+            : verified
+                ? CarbonFluxColors.green
+                : CarbonFluxColors.yellow;
+    final headline = idle
+        ? 'Backend link standing by'
+        : isUploading
+            ? 'Uploading live telemetry'
+            : failed
+                ? 'Backend upload needs attention'
+                : 'Backend upload healthy';
+    final detail = status ?? 'Monitoring sensor data stream';
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       margin: const EdgeInsets.only(top: 14),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: CarbonFluxColors.bgSurface,
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: accent.withValues(alpha: 0.65), width: 1.5),
+        gradient: LinearGradient(
+          colors: [
+            accent.withAlpha(26),
+            CarbonFluxColors.bgSurface,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: accent.withAlpha(120), width: 1.2),
+        boxShadow: [
+          BoxShadow(
+            color: accent.withAlpha(22),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isUploading && !failed && !verified) ...[
-            SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: accent,
-              ),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: accent.withAlpha(34),
+              shape: BoxShape.circle,
+              border: Border.all(color: accent.withAlpha(120)),
             ),
-            const SizedBox(width: 12),
-          ] else if (failed) ...[
-            const Icon(Icons.error_outline,
-                size: 20, color: CarbonFluxColors.red),
-            const SizedBox(width: 12),
-          ] else if (verified) ...[
-            const Icon(
-              Icons.check_circle_outline,
-              size: 20,
-              color: CarbonFluxColors.green,
+            child: Center(
+              child: isUploading
+                  ? SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: accent,
+                      ),
+                    )
+                  : Icon(
+                      failed
+                          ? Icons.cloud_off_rounded
+                          : verified
+                              ? Icons.cloud_done_rounded
+                              : Icons.sensors_rounded,
+                      size: 20,
+                      color: accent,
+                    ),
             ),
-            const SizedBox(width: 12),
-          ],
+          ),
+          const SizedBox(width: 14),
           Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  headline.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.1,
+                    color: accent,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  detail,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: CarbonFluxColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: accent.withAlpha(24),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: accent.withAlpha(90)),
+            ),
             child: Text(
-              status ?? 'Processing...',
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                color: CarbonFluxColors.textPrimary,
-                letterSpacing: 0.5,
+              idle
+                  ? 'IDLE'
+                  : isUploading
+                      ? 'LIVE'
+                      : failed
+                          ? 'ERROR'
+                          : 'OK',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1,
+                color: accent,
               ),
             ),
           ),

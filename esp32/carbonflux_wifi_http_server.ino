@@ -19,7 +19,7 @@
  *   Char command (write)      : 6f4e0003-5f8a-4d8d-9f4f-3a7c8e3d1001
  *   Char reading (read/notify): 6f4e0004-5f8a-4d8d-9f4f-3a7c8e3d1001
  *
- * States: STANDBY → WARMUP (90s) → READY → DETECTING → STOPPED
+ * States: STANDBY → WARMUP (30s) → READY → DETECTING → STOPPED
  */
 
 #include <WiFi.h>
@@ -67,7 +67,7 @@ const char* BLE_COMMAND_CHAR_UUID= "6f4e0003-5f8a-4d8d-9f4f-3a7c8e3d1001";
 const char* BLE_READING_CHAR_UUID= "6f4e0004-5f8a-4d8d-9f4f-3a7c8e3d1001";
 
 // ─── Timing ─────────────────────────────────────────────────────────────────
-#define WARMUP_MS         90000UL
+#define WARMUP_MS         30000UL
 #define READ_INTERVAL_MS  2000UL
 #define AVG_SAMPLES       5
 #define MAX_READINGS      300       // store up to 300 readings (~10 min)
@@ -306,7 +306,7 @@ void processCommand(const String& cmd, String& result, String& message) {
         currentState = WARMUP;
         warmupStart  = millis();
         readingCount = 0;
-        message      = "Warmup started - 90 seconds";
+        message      = "Warmup started - 30 seconds";
         Serial.println("[STATE] -> WARMUP");
       }
     } else {

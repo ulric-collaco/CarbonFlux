@@ -11,6 +11,8 @@ import '../services/esp32_bluetooth_service.dart';
 
 enum ConnectionTransport { wifi, bluetooth }
 
+const carbonFluxWarmupDuration = Duration(seconds: 30);
+
 class CarbonfluxAppState {
   const CarbonfluxAppState({
     this.savedIp,
@@ -128,7 +130,7 @@ class CarbonfluxAppState {
   int get warmupRemainingSeconds {
     if (status?.state != 'WARMUP' || warmupStartedAt == null) return 0;
     final elapsed = DateTime.now().difference(warmupStartedAt!).inSeconds;
-    final left = 90 - elapsed;
+    final left = carbonFluxWarmupDuration.inSeconds - elapsed;
     return left < 0 ? 0 : left;
   }
 
@@ -166,7 +168,6 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   final Esp32BluetoothService _bluetooth;
   final BackendService _backend;
   Timer? _pollTimer;
-  int _pollTicks = 0;
 
   Future<void> _loadSavedIp() async {
     final prefs = await SharedPreferences.getInstance();
@@ -233,6 +234,8 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         connectedBluetoothDeviceName: null,
         lastWarmupCompletedAt: lastWarmupAt,
         warmupStartedAt: status.state == 'WARMUP' ? DateTime.now() : null,
+        isUploading: false,
+        clearUploadingStatus: true,
         clearError: true,
       );
 
@@ -278,6 +281,8 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         connectedBluetoothDeviceName: selected?.name,
         lastWarmupCompletedAt: lastWarmupAt,
         warmupStartedAt: status.state == 'WARMUP' ? DateTime.now() : null,
+        isUploading: false,
+        clearUploadingStatus: true,
         clearError: true,
       );
 
@@ -374,6 +379,8 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
       readingHistory: const [],
       streamReadings: const [],
       clearWarmupStart: true,
+      isUploading: false,
+      clearUploadingStatus: true,
     );
   }
 
@@ -406,7 +413,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         savedIp: status.ip ?? state.savedIp,
       );
 
-      await _refreshNow(forceStream: true);
+      await _refreshNow();
 
       // ── Batch upload to backend when detection stops ───────────────
       if (command == 'STOP' && state.readingHistory.isNotEmpty) {
@@ -494,7 +501,9 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
     final warmupStarted = await sendCommand('START_WARMUP');
     if (!warmupStarted) return false;
 
-    final ready = await _waitForReady(timeout: const Duration(seconds: 110));
+    final ready = await _waitForReady(
+      timeout: carbonFluxWarmupDuration + const Duration(seconds: 15),
+    );
     if (!ready) return false;
 
     final now = DateTime.now();
@@ -542,7 +551,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
     state = state.copyWith(clearError: true);
   }
 
-  Future<void> _refreshNow({bool forceStream = false}) async {
+  Future<void> _refreshNow() async {
     if (!state.isConnected) return;
 
     try {
@@ -572,13 +581,6 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         await _fetchReadingWifi();
       } else {
         await _fetchReadingBluetooth();
-      }
-
-      final shouldRefreshStream = forceStream ||
-          (_pollTicks % 5 == 0 &&
-              (status.state == 'DETECTING' || status.state == 'STOPPED'));
-      if (shouldRefreshStream) {
-        await refreshStream();
       }
     } on Esp32ApiException catch (error) {
       state = state.copyWith(errorMessage: error.message, isConnected: false);
@@ -632,37 +634,42 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   }
 
   Future<void> _uploadSingleReading(SensorReading reading) async {
-    state = state.copyWith(isUploading: true, uploadingStatus: 'Hashing & Signing data...');
-    // Minimal delay to let the UI show the first step to users for demo purposes
+    state = state.copyWith(
+      isUploading: true,
+      uploadingStatus: 'Hashing and signing reading...',
+    );
     await Future.delayed(const Duration(milliseconds: 300));
-    
-    state = state.copyWith(uploadingStatus: 'Sending payload to Backend...');
-    
+
+    state = state.copyWith(uploadingStatus: 'Sending payload to backend...');
+
     try {
       final result = await _backend.uploadReadingLive(reading);
       if (result.success) {
-         state = state.copyWith(
-           lastUploadResult: result,
-           uploadingStatus: 'Verified! Block #${result.lastBlockIndex} updated.',
-         );
+        final blockLabel = result.lastBlockIndex == null
+            ? 'Verified and anchored.'
+            : 'Verified and anchored in block #${result.lastBlockIndex}.';
+        state = state.copyWith(
+          isUploading: false,
+          lastUploadResult: result,
+          uploadingStatus: blockLabel,
+        );
       } else {
-         state = state.copyWith(uploadingStatus: 'Upload failed: ${result.error}');
+        state = state.copyWith(
+          isUploading: false,
+          uploadingStatus: 'Upload failed: ${result.error}',
+        );
       }
     } catch (_) {
-      state = state.copyWith(uploadingStatus: 'Upload failed (Network Error)');
-    }
-
-    // Leave the success/fail message visible for a short period before clearing
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (state.uploadingStatus != null) {
-      state = state.copyWith(isUploading: false, clearUploadingStatus: true);
+      state = state.copyWith(
+        isUploading: false,
+        uploadingStatus: 'Upload failed: network error.',
+      );
     }
   }
 
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      _pollTicks += 1;
       // Only poll readings when tracking/detection cycle is active.
       if (state.isDetectionCycleRunning) {
         await _refreshNow();
@@ -682,12 +689,18 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
 
   /// Upload all DETECTING readings accumulated during this session to the CF Worker.
   Future<void> _uploadDetectionBatch() async {
-    state = state.copyWith(isUploading: true);
+    state = state.copyWith(
+      isUploading: true,
+      uploadingStatus: 'Syncing captured detection batch...',
+    );
     try {
       final result = await _backend.uploadBatch(state.readingHistory);
       state = state.copyWith(
         isUploading: false,
         lastUploadResult: result,
+        uploadingStatus: result.success
+            ? 'Batch synced: ${result.uploaded} readings confirmed.'
+            : 'Batch upload failed: ${result.error}',
       );
     } catch (e) {
       state = state.copyWith(
@@ -698,6 +711,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
           failed: state.readingHistory.length,
           error: e.toString(),
         ),
+        uploadingStatus: 'Batch upload failed: $e',
       );
     }
   }
