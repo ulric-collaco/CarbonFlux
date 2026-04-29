@@ -8,7 +8,7 @@ import { POLL_INTERVAL_MS, PPM_VIOLATION_THRESHOLD } from '../config.js'
 import { StateBadge, PpmGauge, KPICard } from '../components/Widgets.jsx'
 import { exportData } from '../utils/export.js'
 
-const MAX_CHART_POINTS = 50
+const INITIAL_CHART_POINTS = 50
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -56,14 +56,14 @@ export default function LiveMonitor() {
   const [status, setStatus]         = useState(null)
   const [error, setError]           = useState(null)
   const [lastPoll, setLastPoll]     = useState(null)
-  const [isLive, setIsLive]         = useState(true)
+  const [readingLimit, setReadingLimit] = useState(INITIAL_CHART_POINTS)
   const intervalRef                 = useRef(null)
 
   const poll = useCallback(async () => {
     try {
       // First try to hit the backend reading
       const [readData, statData] = await Promise.all([
-        api.readings(MAX_CHART_POINTS),
+        api.readings(readingLimit === 'all' ? 1000 : readingLimit),
         api.status(),
       ])
 
@@ -100,22 +100,19 @@ export default function LiveMonitor() {
     } catch (err) {
       setError('Failed to reach backend. Check your CF Worker URL.')
     }
-  }, [])
+  }, [readingLimit])
 
   useEffect(() => {
     poll()
-    if (isLive) {
-      intervalRef.current = setInterval(poll, POLL_INTERVAL_MS)
-    }
+    intervalRef.current = setInterval(poll, POLL_INTERVAL_MS)
     return () => clearInterval(intervalRef.current)
-  }, [poll, isLive])
+  }, [poll])
 
   const latest = readings.at(-1)
   const currentPpm = latest?.ppm_value ?? 0
   const currentAvg = latest?.avg_ppm ?? 0
-  const deviceId   = latest?.device_id ?? '—'
 
-  // Infer device state from latest reading — CF Worker doesn't track state
+  // Infer device state from latest reading â€” CF Worker doesn't track state
   // Use reading metadata as proxy
   const violationCount = readings.filter(r => r.ppm_value > PPM_VIOLATION_THRESHOLD).length
 
@@ -131,49 +128,7 @@ export default function LiveMonitor() {
           {latest && <StateBadge state="DETECTING" />}
         </div>
 
-        <div className="page-header-actions" style={{ alignItems: 'center' }}>
-          {/* Device ID */}
-          <div className="monitor-meta-chip" style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10,
-            color: '#444', padding: '6px 10px', border: '1px solid #1a1a1a',
-          }}>
-            {deviceId}
-          </div>
-
-          {/* Sample count */}
-          <div className="monitor-meta-chip" style={{
-            fontFamily: 'var(--font-mono)', fontSize: 10,
-            color: '#444', padding: '6px 10px', border: '1px solid #1a1a1a',
-          }}>
-            {readings.length} / {MAX_CHART_POINTS} SAMPLES
-          </div>
-
-          {/* Live toggle */}
-          <button
-            id="live-toggle-btn"
-            onClick={() => {
-              const next = !isLive
-              setIsLive(next)
-              if (next) intervalRef.current = setInterval(poll, POLL_INTERVAL_MS)
-              else clearInterval(intervalRef.current)
-            }}
-            className="monitor-live-toggle"
-            style={{
-              padding: '8px 20px',
-              background: isLive ? 'transparent' : '#FFD600',
-              border: isLive ? '2px solid #FF2D2D' : '2px solid #FFD600',
-              color: isLive ? '#FF2D2D' : '#0d0d0d',
-              fontFamily: 'var(--font-condensed)',
-              fontSize: 12, fontWeight: 900,
-              letterSpacing: '0.15em', cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            {isLive ? '⏹ PAUSE' : '▶ RESUME'}
-          </button>
-        </div>
       </div>
-
       {/* Error banner */}
       {error && (
         <div className="page-error-banner" style={{
@@ -182,14 +137,14 @@ export default function LiveMonitor() {
           fontFamily: 'var(--font-mono)', fontSize: 12, color: '#FF2D2D',
           letterSpacing: '0.05em',
         }}>
-          ⚠ {error}
+          âš  {error}
         </div>
       )}
 
       {/* Main grid */}
       <div className="monitor-main-grid">
 
-        {/* ─── Left panel — KPIs ─── */}
+        {/* â”€â”€â”€ Left panel â€” KPIs â”€â”€â”€ */}
         <div className="monitor-left-panel">
           <div style={{ padding: '20px 20px 12px' }}>
             <PpmGauge ppm={currentPpm} label="CURRENT PPM" />
@@ -205,13 +160,13 @@ export default function LiveMonitor() {
             />
             <KPICard
               label="READINGS STORED"
-              value={status?.readings_count ?? '—'}
+              value={status?.readings_count ?? 'â€”'}
               accentColor="#FFD600"
               subLabel="Total validated readings"
             />
             <KPICard
               label="CHAIN BLOCKS"
-              value={status?.chain_length ?? '—'}
+              value={status?.chain_length ?? 'â€”'}
               accentColor="#888"
               subLabel="Blockchain entries"
             />
@@ -277,7 +232,7 @@ export default function LiveMonitor() {
               <div style={{
                 background: '#111', border: '1px solid #1a1a1a',
                 padding: '12px 16px',
-                borderTop: isLive ? '3px solid #00FF6A' : '3px solid #FF8C00',
+                borderTop: '3px solid #00FF6A',
               }}>
                 <div style={{
                   fontFamily: 'var(--font-condensed)',
@@ -286,7 +241,7 @@ export default function LiveMonitor() {
                 }}>
                   LAST UPDATED
                 </div>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: isLive ? '#00FF6A' : '#FF8C00' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#00FF6A' }}>
                   {lastPoll.toLocaleTimeString()}
                 </div>
                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#333', marginTop: 4 }}>
@@ -297,7 +252,7 @@ export default function LiveMonitor() {
           )}
         </div>
 
-        {/* ─── Right panel — Chart ─── */}
+        {/* â”€â”€â”€ Right panel â€” Chart â”€â”€â”€ */}
         <div className="monitor-right-panel">
 
           {/* Violation alert banner */}
@@ -310,7 +265,7 @@ export default function LiveMonitor() {
                 fontFamily: 'var(--font-display)',
                 fontSize: 20, color: '#FF2D2D', letterSpacing: '0.05em',
               }}>
-                ⚠ VIOLATION ALERT
+                âš  VIOLATION ALERT
               </span>
               <span style={{
                 fontFamily: 'var(--font-mono)',
@@ -324,12 +279,68 @@ export default function LiveMonitor() {
           {/* Chart */}
           <div className="monitor-chart-box">
             <div style={{
-              fontFamily: 'var(--font-condensed)',
-              fontSize: 10, fontWeight: 700,
-              letterSpacing: '0.2em', color: '#555',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
               marginBottom: 16,
             }}>
-              PPM OVER TIME — LAST {readings.length} READINGS
+              <div style={{
+                fontFamily: 'var(--font-condensed)',
+                fontSize: 10, fontWeight: 700,
+                letterSpacing: '0.2em', color: '#555',
+              }}>
+                PPM OVER TIME
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => setReadingLimit(50)}
+                  style={{
+                    background: readingLimit === 50 ? '#00AAFF' : '#1a1a1a', 
+                    border: '1px solid', borderColor: readingLimit === 50 ? '#00AAFF' : '#333',
+                    color: readingLimit === 50 ? '#000' : '#888',
+                    padding: '4px 12px',
+                    fontFamily: 'var(--font-condensed)', fontSize: 10,
+                    fontWeight: 700, letterSpacing: '0.1em',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => { if (readingLimit !== 50) e.currentTarget.style.background = '#222' }}
+                  onMouseOut={e => { if (readingLimit !== 50) e.currentTarget.style.background = '#1a1a1a' }}
+                >
+                  LATEST 50
+                </button>
+                <button
+                  onClick={() => setReadingLimit(150)}
+                  style={{
+                    background: readingLimit === 150 ? '#00AAFF' : '#1a1a1a', 
+                    border: '1px solid', borderColor: readingLimit === 150 ? '#00AAFF' : '#333',
+                    color: readingLimit === 150 ? '#000' : '#888',
+                    padding: '4px 12px',
+                    fontFamily: 'var(--font-condensed)', fontSize: 10,
+                    fontWeight: 700, letterSpacing: '0.1em',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => { if (readingLimit !== 150) e.currentTarget.style.background = '#222' }}
+                  onMouseOut={e => { if (readingLimit !== 150) e.currentTarget.style.background = '#1a1a1a' }}
+                >
+                  150 READINGS
+                </button>
+                <button
+                  onClick={() => setReadingLimit('all')}
+                  style={{
+                    background: readingLimit === 'all' ? '#00AAFF' : '#1a1a1a', 
+                    border: '1px solid', borderColor: readingLimit === 'all' ? '#00AAFF' : '#333',
+                    color: readingLimit === 'all' ? '#000' : '#888',
+                    padding: '4px 12px',
+                    fontFamily: 'var(--font-condensed)', fontSize: 10,
+                    fontWeight: 700, letterSpacing: '0.1em',
+                    cursor: 'pointer', transition: 'all 0.15s',
+                  }}
+                  onMouseOver={e => { if (readingLimit !== 'all') e.currentTarget.style.background = '#222' }}
+                  onMouseOut={e => { if (readingLimit !== 'all') e.currentTarget.style.background = '#1a1a1a' }}
+                >
+                  ALL TIME
+                </button>
+              </div>
             </div>
 
             {readings.length === 0 ? (
@@ -339,8 +350,8 @@ export default function LiveMonitor() {
                 fontFamily: 'var(--font-mono)', fontSize: 12, color: '#333',
                 letterSpacing: '0.1em', flexDirection: 'column', gap: 8,
               }}>
-                <div style={{ fontSize: 28 }}>◌</div>
-                <div>NO DATA — AWAITING READINGS</div>
+                <div style={{ fontSize: 28 }}>â—Œ</div>
+                <div>NO DATA â€” AWAITING READINGS</div>
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
