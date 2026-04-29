@@ -6,7 +6,6 @@ import BlockchainLog from './pages/BlockchainLog.jsx'
 import ChainAudit from './pages/ChainAudit.jsx'
 import IncidentCenter from './pages/IncidentCenter.jsx'
 import { api } from './api.js'
-import("react-grab");
 
 function ScrollToTop() {
   const { pathname } = useLocation()

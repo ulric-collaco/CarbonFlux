@@ -10,9 +10,7 @@
   "dependencies": {
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-grab": "^0.1.32",
     "react-router-dom": "^6.23.1",
-    "react-scan": "^0.5.3",
     "recharts": "^2.12.7",
     "xlsx": "^0.18.5"
   },
