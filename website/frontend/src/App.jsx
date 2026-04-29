@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import LiveMonitor from './pages/LiveMonitor.jsx'
+import Analytics from './pages/Analytics.jsx'
 import ChainAudit from './pages/ChainAudit.jsx'
 import IncidentCenter from './pages/IncidentCenter.jsx'
 import { api } from './api.js'
@@ -35,6 +36,7 @@ export default function App() {
       <Routes>
         <Route path="/"        element={<LiveMonitor />} />
         <Route path="/monitor" element={<LiveMonitor />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/audit"   element={<ChainAudit />} />
         <Route path="/incidents" element={<IncidentCenter />} />
         {/* Fallback */}

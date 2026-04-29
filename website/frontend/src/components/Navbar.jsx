@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom'
 
 const NAV_LINKS = [
   { label: 'LIVE MONITOR', path: '/' },
+  { label: 'ANALYTICS', path: '/analytics' },
   { label: 'INCIDENT CENTER', path: '/incidents' },
   { label: 'CHAIN AUDIT', path: '/audit' },
 ]
