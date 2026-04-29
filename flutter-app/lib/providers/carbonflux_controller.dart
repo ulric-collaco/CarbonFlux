@@ -8,6 +8,7 @@ import '../models/sensor_reading.dart';
 import '../services/backend_service.dart';
 import '../services/esp32_api_service.dart';
 import '../services/esp32_bluetooth_service.dart';
+import '../utils/reading_history.dart';
 
 enum ConnectionTransport { wifi, bluetooth }
 
@@ -76,6 +77,7 @@ class CarbonfluxAppState {
     bool clearError = false,
     DeviceStatus? status,
     SensorReading? latestReading,
+    bool clearLatestReading = false,
     List<SensorReading>? readingHistory,
     List<SensorReading>? streamReadings,
     List<DiscoveredEsp32Device>? discoveredWifiDevices,
@@ -103,7 +105,7 @@ class CarbonfluxAppState {
           isDiscoveringBluetooth ?? this.isDiscoveringBluetooth,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       status: status ?? this.status,
-      latestReading: latestReading ?? this.latestReading,
+      latestReading: clearLatestReading ? null : (latestReading ?? this.latestReading),
       readingHistory: readingHistory ?? this.readingHistory,
       streamReadings: streamReadings ?? this.streamReadings,
       discoveredWifiDevices:
@@ -239,7 +241,9 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         clearError: true,
       );
 
-      await _fetchReadingWifi();
+      if (_shouldFetchLiveReading(status.state)) {
+        await _fetchReadingWifi();
+      }
       _startPolling();
     } on Esp32ApiException catch (error) {
       state = state.copyWith(
@@ -286,7 +290,9 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         clearError: true,
       );
 
-      await _fetchReadingBluetooth();
+      if (_shouldFetchLiveReading(status.state)) {
+        await _fetchReadingBluetooth();
+      }
       _startPolling();
     } on Esp32BluetoothException catch (error) {
       state = state.copyWith(
@@ -375,7 +381,7 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
       isConnecting: false,
       isCommandInFlight: false,
       status: null,
-      latestReading: null,
+      clearLatestReading: true,
       readingHistory: const [],
       streamReadings: const [],
       clearWarmupStart: true,
@@ -415,11 +421,6 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
 
       await _refreshNow();
 
-      // ── Batch upload to backend when detection stops ───────────────
-      if (command == 'STOP' && state.readingHistory.isNotEmpty) {
-        unawaited(_uploadDetectionBatch());
-      }
-
       return true;
     } on Esp32ApiException catch (error) {
       state = state.copyWith(
@@ -439,7 +440,14 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   Future<bool> startDetectionCycle() async {
     if (!state.isConnected || state.isDetectionCycleRunning) return false;
 
-    state = state.copyWith(isDetectionCycleRunning: true, clearError: true);
+    state = state.copyWith(
+      isDetectionCycleRunning: true,
+      readingHistory: const [],
+      clearLatestReading: true,
+      isUploading: false,
+      clearUploadingStatus: true,
+      clearError: true,
+    );
 
     try {
       if (_isWarmupNeeded()) {
@@ -577,9 +585,10 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
         savedIp: status.ip ?? state.savedIp,
       );
 
-      if (state.transport == ConnectionTransport.wifi) {
+      if (_shouldFetchLiveReading(status.state) &&
+          state.transport == ConnectionTransport.wifi) {
         await _fetchReadingWifi();
-      } else {
+      } else if (_shouldFetchLiveReading(status.state)) {
         await _fetchReadingBluetooth();
       }
     } on Esp32ApiException catch (error) {
@@ -609,10 +618,16 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   }
 
   void _appendReading(SensorReading reading) {
-    final updatedHistory = [...state.readingHistory, reading];
-    if (updatedHistory.length > _maxHistoryPoints) {
-      updatedHistory.removeRange(0, updatedHistory.length - _maxHistoryPoints);
+    if (state.readingHistory.isNotEmpty &&
+        isSameSensorSample(state.readingHistory.last, reading)) {
+      return;
     }
+
+    final updatedHistory = appendUniqueReading(
+      state.readingHistory,
+      reading,
+      maxPoints: _maxHistoryPoints,
+    );
 
     state = state.copyWith(
       latestReading: reading,
@@ -670,11 +685,14 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
   void _startPolling() {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
-      // Only poll readings when tracking/detection cycle is active.
-      if (state.isDetectionCycleRunning) {
+      if (state.isConnected && !state.isCommandInFlight) {
         await _refreshNow();
       }
     });
+  }
+
+  bool _shouldFetchLiveReading(String? deviceState) {
+    return deviceState == 'DETECTING';
   }
 
   bool _isLikelyIp(String value) {
@@ -685,35 +703,6 @@ class CarbonfluxController extends StateNotifier<CarbonfluxAppState> {
       if (n == null || n < 0 || n > 255) return false;
     }
     return true;
-  }
-
-  /// Upload all DETECTING readings accumulated during this session to the CF Worker.
-  Future<void> _uploadDetectionBatch() async {
-    state = state.copyWith(
-      isUploading: true,
-      uploadingStatus: 'Syncing captured detection batch...',
-    );
-    try {
-      final result = await _backend.uploadBatch(state.readingHistory);
-      state = state.copyWith(
-        isUploading: false,
-        lastUploadResult: result,
-        uploadingStatus: result.success
-            ? 'Batch synced: ${result.uploaded} readings confirmed.'
-            : 'Batch upload failed: ${result.error}',
-      );
-    } catch (e) {
-      state = state.copyWith(
-        isUploading: false,
-        lastUploadResult: UploadResult(
-          success: false,
-          uploaded: 0,
-          failed: state.readingHistory.length,
-          error: e.toString(),
-        ),
-        uploadingStatus: 'Batch upload failed: $e',
-      );
-    }
   }
 
   @override

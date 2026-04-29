@@ -26,6 +26,7 @@ const MAX_READINGS = 200;
 const MAX_NONCES = 1000;
 const MAX_CHAIN_RESPONSE = 500;
 const MAX_INCIDENTS = 1000;
+const DEFAULT_PPM_VIOLATION_THRESHOLD = 500;
 
 // ─── CORS helpers ────────────────────────────────────────────────────────────
 
@@ -143,7 +144,10 @@ async function appendBlock(env, reading) {
 
   const index = chain.length;
   const previous_hash = index === 0 ? '0'.repeat(64) : chain[chain.length - 1].block_hash;
-  const violationThreshold = parseInt(env.PPM_VIOLATION_THRESHOLD || '1000', 10);
+  const violationThreshold = parseInt(
+    env.PPM_VIOLATION_THRESHOLD || String(DEFAULT_PPM_VIOLATION_THRESHOLD),
+    10,
+  );
   const isViolation = ppm_value > violationThreshold;
 
   // block_hash = SHA-256(index + previous_hash + timestamp + data_hash)
@@ -267,7 +271,10 @@ async function storeIncidents(env, incidents) {
 }
 
 async function processIncidentLifecycle(env, reading, nowMs) {
-  const threshold = parseInt(env.PPM_VIOLATION_THRESHOLD || '500', 10);
+  const threshold = parseInt(
+    env.PPM_VIOLATION_THRESHOLD || String(DEFAULT_PPM_VIOLATION_THRESHOLD),
+    10,
+  );
   const sustainedWindowSecs = parseInt(env.INCIDENT_SUSTAINED_SECONDS || '30', 10);
   const autoResolve = parseBooleanEnv(env.INCIDENT_AUTO_RESOLVE, true);
   const ppmValue = Number(reading.ppm_value);
