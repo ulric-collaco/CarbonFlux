@@ -6,6 +6,58 @@ function hashShort(hash) {
   return `${hash.slice(0, 10)}…${hash.slice(-6)}`
 }
 
+import { PPM_VIOLATION_THRESHOLD } from '../config.js'
+
+function ChainVisualization({ results }) {
+  if (!results || results.length === 0) return null;
+  return (
+    <div style={{
+      display: 'flex', overflowX: 'auto', padding: '32px 24px', gap: '12px',
+      alignItems: 'center', borderBottom: '1px solid #111',
+      scrollbarWidth: 'thin', scrollbarColor: '#333 #0d0d0d'
+    }}>
+      {results.map((r, idx) => (
+        <React.Fragment key={r.index}>
+          <div className="chain-block" style={{
+            background: r.valid ? 'rgba(0,255,106,0.05)' : 'rgba(255,45,45,0.05)',
+            border: `1px solid ${r.valid ? '#00FF6A' : '#FF2D2D'}`,
+            padding: '12px 16px',
+            minWidth: '140px',
+            boxShadow: `0 0 15px ${r.valid ? 'rgba(0,255,106,0.15)' : 'rgba(255,45,45,0.3)'}`,
+            animation: `tick-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`,
+            animationDelay: `${idx * 0.08}s`,
+            opacity: 0,
+            flexShrink: 0
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <span style={{ fontFamily: 'var(--font-condensed)', fontSize: 10, color: '#888', letterSpacing: '0.1em' }}>
+                BLOCK {r.index}
+              </span>
+              <span style={{ color: r.valid ? '#00FF6A' : '#FF2D2D', fontSize: 10 }}>
+                {r.valid ? '✓' : '✗'}
+              </span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#ddd' }}>
+              {hashShort(r.block_hash)}
+            </div>
+          </div>
+          {idx < results.length - 1 && (
+            <div style={{
+              color: (r.valid && results[idx + 1].valid) ? '#00FF6A' : '#FF2D2D',
+              animation: `fadeIn 0.2s linear forwards`,
+              animationDelay: `${(idx * 0.08) + 0.08}s`,
+              opacity: 0,
+              flexShrink: 0
+            }}>
+              ━━▶
+            </div>
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  )
+}
+
 export default function ChainAudit() {
   const [auditResult, setAuditResult] = useState(null)
   const [loading, setLoading]         = useState(false)
@@ -85,7 +137,7 @@ export default function ChainAudit() {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state & Loading state */}
       {!auditResult && !loading && !error && (
         <div className="audit-empty">
           <div className="grid-bg" style={{
@@ -114,9 +166,25 @@ export default function ChainAudit() {
         </div>
       )}
 
+      {loading && !auditResult && (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          height: '60vh', fontFamily: 'var(--font-condensed)', color: '#FFD600',
+          letterSpacing: '0.3em', animation: 'pulse-yellow 1.5s infinite'
+        }}>
+          <div className="scanline" style={{ width: '80%', height: 2, background: '#FFD600', marginBottom: 24 }} />
+          <div style={{ fontSize: 24, fontWeight: 900 }}>RECOMPUTING HASH CHAIN…</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#888', marginTop: 12 }}>
+            PLEASE STAND BY
+          </div>
+        </div>
+      )}
+
       {/* Results */}
-      {auditResult && (
+      {auditResult && !loading && (
         <div className="fade-in">
+          <ChainVisualization results={auditResult.results} />
+          
           {/* Summary stats */}
           <div className="blockchain-stats" style={{ borderBottom: '2px solid #111' }}>
             {[
@@ -183,7 +251,7 @@ export default function ChainAudit() {
                       {r.prevHashMatch ? '✓' : '✗ BROKEN LINK'}
                     </td>
                     <td style={{ color: '#FFD600' }}>{r.device_id}</td>
-                    <td style={{ color: r.ppm_value > 1000 ? '#FF2D2D' : '#00FF6A' }}>
+                    <td style={{ color: r.ppm_value > PPM_VIOLATION_THRESHOLD ? '#FF2D2D' : '#00FF6A' }}>
                       {r.ppm_value?.toFixed(2)}
                     </td>
                     <td>{new Date(r.timestamp * 1000).toLocaleString()}</td>
