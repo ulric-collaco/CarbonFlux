@@ -174,7 +174,7 @@ class DashboardScreen extends ConsumerWidget {
                       fontFamily: 'monospace',
                     ),
                   ),
-                  if (state.uploadingStatus != null || state.isUploading)
+                  if (state.isDetectionCycleRunning)
                     LiveUploadBar(
                       isUploading: state.isUploading,
                       status: state.uploadingStatus,

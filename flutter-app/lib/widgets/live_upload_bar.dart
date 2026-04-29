@@ -14,8 +14,35 @@ class LiveUploadBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Render the upload bar consistently. If not actively uploading/status, show "Monitoring..." state.
     if (!isUploading && status == null) {
-      return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.only(top: 24),
+        decoration: BoxDecoration(
+          color: Colors.blue.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.blue),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              'Monitoring Sensor Data...',
+              style: TextStyle(
+                color: Colors.blue[300],
+                fontFamily: 'RobotoMono',
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      );
     }
 
     final failed = status != null && status!.toLowerCase().contains('failed');

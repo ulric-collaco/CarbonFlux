@@ -55,28 +55,6 @@ class Esp32ApiService {
     }
   }
 
-  Future<List<Map<String, dynamic>>> _getJsonList(Uri uri) async {
-    try {
-      final response = await _client.get(uri).timeout(_timeout);
-      if (response.statusCode != 200) {
-        throw Esp32ApiException('ESP32 returned HTTP ${response.statusCode}');
-      }
-
-      final decoded = jsonDecode(response.body);
-      if (decoded is List) {
-        return decoded.whereType<Map<String, dynamic>>().toList();
-      }
-      throw Esp32ApiException('Unexpected stream response format.');
-    } on FormatException {
-      throw Esp32ApiException('Invalid JSON response from ESP32.');
-    } on http.ClientException {
-      throw Esp32ApiException('Network error. Check WiFi connection.');
-    } on Exception catch (error) {
-      if (error is Esp32ApiException) rethrow;
-      throw Esp32ApiException('Request failed: $error');
-    }
-  }
-
   Future<DeviceStatus> getStatus(String ip) async {
     final json = await _getJson(_uri(ip, '/status'));
     return DeviceStatus.fromJson(json);
@@ -211,8 +189,12 @@ class Esp32ApiService {
   }
 
   Future<List<SensorReading>> getStream(String ip) async {
-    final jsonList = await _getJsonList(_uri(ip, '/stream'));
-    return jsonList.map(SensorReading.fromJson).toList();
+    final response = await _getJson(_uri(ip, '/stream'));
+    final readings = response['readings'];
+    if (readings is List) {
+      return readings.cast<Map<String, dynamic>>().map(SensorReading.fromJson).toList();
+    }
+    throw Esp32ApiException('Unexpected stream response format.');
   }
 
   Future<DeviceStatus> sendCommand(String ip, String command) async {

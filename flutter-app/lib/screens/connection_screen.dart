@@ -14,14 +14,11 @@ class ConnectionScreen extends ConsumerStatefulWidget {
 }
 
 class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
-  late final TextEditingController _ipController;
   bool _autoWifiDiscoveryTriggered = false;
 
   @override
   void initState() {
     super.initState();
-    final saved = ref.read(carbonfluxControllerProvider).savedIp;
-    _ipController = TextEditingController(text: saved ?? '');
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -31,51 +28,17 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
 
   @override
   void dispose() {
-    _ipController.dispose();
     super.dispose();
-  }
-
-  Future<void> _startMockDemo() async {
-    ref.read(mockModeProvider.notifier).state = true;
-    _ipController.text = '192.168.0.77';
-
-    await Future<void>.delayed(Duration.zero);
-    if (!mounted) return;
-
-    final controller = ref.read(carbonfluxControllerProvider.notifier);
-    controller.setTransport(ConnectionTransport.wifi);
-    await controller.connect(_ipController.text);
   }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(carbonfluxControllerProvider);
     final controller = ref.read(carbonfluxControllerProvider.notifier);
-    final isMockMode = ref.watch(mockModeProvider);
 
     return Scaffold(
       appBar: AppBar(
-        actions: [
-          Row(
-            children: [
-              const Text(
-                'MOCK MODE',
-                style: TextStyle(
-                  color: CarbonFluxColors.yellow,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1,
-                ),
-              ),
-              Switch(
-                value: isMockMode,
-                onChanged: (val) {
-                  ref.read(mockModeProvider.notifier).state = val;
-                },
-              ),
-            ],
-          ),
-        ],
+        title: const Text('Connect to Device'),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -148,7 +111,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                     _buildBluetoothSection(state, controller),
                   if (state.errorMessage != null) ...[
                     const SizedBox(height: 16),
-                    _buildRecoveryPanel(state, controller, isMockMode),
+                    _buildRecoveryPanel(state, controller),
                   ],
                 ],
               ),
@@ -167,72 +130,27 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
     _autoWifiDiscoveryTriggered = true;
     ref
         .read(carbonfluxControllerProvider.notifier)
-        .discoverWifiDevices(hintIp: _ipController.text);
+        .discoverWifiDevices();
   }
 
   Widget _buildWifiSection(
     CarbonfluxAppState state,
     CarbonfluxController controller,
   ) {
-    final suggestions = _buildWifiSuggestions(_ipController.text.trim());
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        HudPanel(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const HudHeader(
-                title: 'WiFi relay',
-                subtitle: 'ESP32 HTTP endpoint discovery',
-              ),
-              const SizedBox(height: 14),
-              TextField(
-                controller: _ipController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'ESP32 IP Address',
-                  hintText: '192.168.1.77',
-                  prefixIcon: Icon(Icons.router_rounded),
-                ),
-              ),
-            ],
+        const HudPanel(
+          child: HudHeader(
+            title: 'WiFi relay',
+            subtitle: 'ESP32 HTTP endpoint discovery',
           ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            for (final ip in suggestions)
-              ActionChip(
-                label: Text(ip),
-                onPressed: () => setState(() => _ipController.text = ip),
-              ),
-          ],
-        ),
-        const SizedBox(height: 14),
-        FilledButton.icon(
-          onPressed: state.isConnecting
-              ? null
-              : () => controller.connect(_ipController.text),
-          icon: state.isConnecting
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.wifi_tethering_rounded),
-          label:
-              Text(state.isConnecting ? 'Connecting...' : 'Connect via WiFi'),
         ),
         const SizedBox(height: 10),
         OutlinedButton.icon(
           onPressed: (state.isConnecting || state.isDiscoveringWifi)
               ? null
-              : () =>
-                  controller.discoverWifiDevices(hintIp: _ipController.text),
+              : () => controller.discoverWifiDevices(),
           icon: state.isDiscoveringWifi
               ? const SizedBox(
                   width: 16,
@@ -267,10 +185,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                   trailing: TextButton(
                     onPressed: state.isConnecting
                         ? null
-                        : () {
-                            _ipController.text = device.ip;
-                            controller.connect(device.ip);
-                          },
+                        : () => controller.connect(device.ip),
                     child: const Text('Use'),
                   ),
                 ),
@@ -292,7 +207,6 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
   Widget _buildRecoveryPanel(
     CarbonfluxAppState state,
     CarbonfluxController controller,
-    bool isMockMode,
   ) {
     final isWifi = state.transport == ConnectionTransport.wifi;
     final isBusy = state.isConnecting ||
@@ -329,9 +243,7 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 OutlinedButton.icon(
                   onPressed: isBusy
                       ? null
-                      : () => controller.discoverWifiDevices(
-                            hintIp: _ipController.text,
-                          ),
+                      : () => controller.discoverWifiDevices(),
                   icon: const Icon(Icons.travel_explore_rounded),
                   label: const Text('SCAN WIFI'),
                 )
@@ -362,11 +274,6 @@ class _ConnectionScreenState extends ConsumerState<ConnectionScreen> {
                 onPressed: controller.clearError,
                 icon: const Icon(Icons.close_rounded),
                 label: const Text('CLEAR'),
-              ),
-              FilledButton.icon(
-                onPressed: isBusy || isMockMode ? null : _startMockDemo,
-                icon: const Icon(Icons.science_outlined),
-                label: const Text('MOCK DEMO'),
               ),
             ],
           ),
