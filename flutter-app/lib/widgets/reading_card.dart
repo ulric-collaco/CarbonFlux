@@ -13,7 +13,7 @@ class ReadingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ppm = reading.ppmProxy;
-    final isHigh = ppm > 1000;
+    final isHigh = ppm > 500;
     final valueColor = isHigh ? CarbonFluxColors.red : CarbonFluxColors.green;
 
     return HudPanel(
@@ -36,7 +36,7 @@ class ReadingCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: const Text(
-                'VIOLATION - EXCEEDS 1000 PPM THRESHOLD',
+                'VIOLATION - EXCEEDS 500 PPM THRESHOLD',
                 style: TextStyle(
                   color: CarbonFluxColors.red,
                   fontSize: 11,
@@ -138,7 +138,7 @@ class ReadingCard extends StatelessWidget {
         const Align(
           alignment: Alignment.centerRight,
           child: Text(
-            'THRESHOLD 1000',
+            'THRESHOLD 500',
             style: TextStyle(
               color: CarbonFluxColors.red,
               fontSize: 9,

@@ -84,7 +84,7 @@ class PpmLineChart extends StatelessWidget {
         ),
         extraLinesData: ExtraLinesData(horizontalLines: [
           HorizontalLine(
-            y: 1000,
+            y: 500,
             color: CarbonFluxColors.red.withValues(alpha: 0.65),
             strokeWidth: 1.3,
             dashArray: [6, 4],
@@ -119,7 +119,7 @@ class PpmLineChart extends StatelessWidget {
             ),
             dotData: FlDotData(
               show: true,
-              checkToShowDot: (spot, _) => spot.y > 1000,
+              checkToShowDot: (spot, _) => spot.y > 500,
               getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
                 radius: 3,
                 color: CarbonFluxColors.red,
@@ -135,9 +135,9 @@ class PpmLineChart extends StatelessWidget {
 
   double _maxY(List<SensorReading> values) {
     final peak = values.fold<double>(
-      1000,
+      500,
       (prev, e) => e.ppmProxy > prev ? e.ppmProxy : prev,
     );
-    return (peak + 200).clamp(1200.0, double.infinity);
+    return (peak + 200).clamp(700.0, double.infinity);
   }
 }

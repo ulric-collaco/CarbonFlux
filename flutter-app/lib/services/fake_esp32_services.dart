@@ -3,6 +3,7 @@ import 'dart:math';
 
 import '../models/device_status.dart';
 import '../models/sensor_reading.dart';
+import '../providers/carbonflux_controller.dart';
 import 'esp32_api_service.dart';
 import 'esp32_bluetooth_service.dart';
 
@@ -20,7 +21,7 @@ class FakeEsp32State {
   static void tick() {
     if (state == 'WARMUP' && warmupStart != null) {
       if (DateTime.now().difference(warmupStart!) >
-          const Duration(seconds: 15)) {
+          carbonFluxWarmupDuration) {
         state = 'READY';
       }
     }
@@ -31,7 +32,7 @@ class FakeEsp32State {
     final r = Random();
     final basePpm = 400.0 + r.nextDouble() * 200;
     final isSpike = r.nextDouble() > 0.85; // 15% chance of a spike
-    final ppm = isSpike ? 1000.0 + r.nextDouble() * 500 : basePpm;
+    final ppm = isSpike ? 500.0 + r.nextDouble() * 500 : basePpm;
 
     return SensorReading(
       deviceId: 'MOCK-DEVICE',

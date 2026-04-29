@@ -15,7 +15,7 @@ import '../widgets/state_badge.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
-  static const double _violationThresholdPpm = 1000;
+  static const double _violationThresholdPpm = 500;
 
   Future<void> _runDetectionCycle(
     BuildContext context,
@@ -55,11 +55,8 @@ class DashboardScreen extends ConsumerWidget {
     final status = state.status;
     final latest = state.latestReading;
     final currentState = status?.state ?? 'UNKNOWN';
-    final analyticsReadings = state.streamReadings.isNotEmpty
-        ? state.streamReadings
-        : state.readingHistory;
     final analytics = _StreamAnalytics.fromReadings(
-      analyticsReadings,
+      state.readingHistory,
       threshold: _violationThresholdPpm,
     );
 
@@ -130,9 +127,7 @@ class DashboardScreen extends ConsumerWidget {
                             currentState == 'STOPPED')
                           _MetricChip(
                             label: 'READINGS',
-                            value: state.streamReadings.isNotEmpty
-                                ? state.streamReadings.length.toString()
-                                : state.readingHistory.length.toString(),
+                            value: state.readingHistory.length.toString(),
                             color: CarbonFluxColors.blue,
                           ),
                       ],
@@ -174,11 +169,10 @@ class DashboardScreen extends ConsumerWidget {
                       fontFamily: 'monospace',
                     ),
                   ),
-                  if (state.isDetectionCycleRunning)
-                    LiveUploadBar(
-                      isUploading: state.isUploading,
-                      status: state.uploadingStatus,
-                    ),
+                  LiveUploadBar(
+                    isUploading: state.isUploading,
+                    status: state.uploadingStatus,
+                  ),
                   const SizedBox(height: 14),
                   if (latest != null) ReadingCard(reading: latest),
                   const SizedBox(height: 14),
@@ -221,19 +215,9 @@ class DashboardScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            const Text(
-                              'STREAM VIEW',
-                              style: CarbonFluxText.section,
-                            ),
-                            const Spacer(),
-                            TextButton.icon(
-                              onPressed: controller.refreshStream,
-                              icon: const Icon(Icons.refresh_rounded),
-                              label: const Text('Refresh'),
-                            ),
-                          ],
+                        const Text(
+                          'SESSION ANALYTICS',
+                          style: CarbonFluxText.section,
                         ),
                         const SizedBox(height: 8),
                         Wrap(
@@ -268,62 +252,6 @@ class DashboardScreen extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
-                        if (state.streamReadings.isEmpty)
-                          const Text(
-                            'No stream data loaded yet.',
-                            style: TextStyle(
-                              color: CarbonFluxColors.textSecondary,
-                            ),
-                          )
-                        else
-                          ...state.streamReadings.reversed.take(8).map((r) {
-                            final high = r.ppmProxy > _violationThresholdPpm;
-                            return ListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              title: Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      'PPM ${r.ppmProxy.toStringAsFixed(1)} | ADC ${r.rawAdc}',
-                                    ),
-                                  ),
-                                  if (high)
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color:
-                                            CarbonFluxColors.red.withAlpha(46),
-                                        borderRadius: BorderRadius.circular(4),
-                                        border: Border.all(
-                                          color: CarbonFluxColors.red
-                                              .withAlpha(165),
-                                        ),
-                                      ),
-                                      child: const Text(
-                                        'VIOLATION',
-                                        style: TextStyle(
-                                          color: CarbonFluxColors.red,
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              subtitle:
-                                  Text('nonce ${r.nonce} | ts ${r.timestamp}'),
-                              trailing: high
-                                  ? const Icon(Icons.warning_amber_rounded,
-                                      color: CarbonFluxColors.red)
-                                  : const Icon(Icons.check_circle_outline,
-                                      color: CarbonFluxColors.green),
-                            );
-                          }),
                       ],
                     ),
                   ),
