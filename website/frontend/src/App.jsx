@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Navbar from './components/Navbar.jsx'
 import LiveMonitor from './pages/LiveMonitor.jsx'
-import BlockchainLog from './pages/BlockchainLog.jsx'
 import ChainAudit from './pages/ChainAudit.jsx'
 import IncidentCenter from './pages/IncidentCenter.jsx'
 import { api } from './api.js'
@@ -36,7 +35,6 @@ export default function App() {
       <Routes>
         <Route path="/"        element={<LiveMonitor />} />
         <Route path="/monitor" element={<LiveMonitor />} />
-        <Route path="/chain"   element={<BlockchainLog />} />
         <Route path="/audit"   element={<ChainAudit />} />
         <Route path="/incidents" element={<IncidentCenter />} />
         {/* Fallback */}

@@ -267,7 +267,7 @@ async function storeIncidents(env, incidents) {
 }
 
 async function processIncidentLifecycle(env, reading, nowMs) {
-  const threshold = parseInt(env.PPM_VIOLATION_THRESHOLD || '1000', 10);
+  const threshold = parseInt(env.PPM_VIOLATION_THRESHOLD || '500', 10);
   const sustainedWindowSecs = parseInt(env.INCIDENT_SUSTAINED_SECONDS || '30', 10);
   const autoResolve = parseBooleanEnv(env.INCIDENT_AUTO_RESOLVE, true);
   const ppmValue = Number(reading.ppm_value);

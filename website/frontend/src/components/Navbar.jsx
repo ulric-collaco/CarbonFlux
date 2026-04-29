@@ -4,7 +4,6 @@ import { NavLink } from 'react-router-dom'
 const NAV_LINKS = [
   { label: 'LIVE MONITOR', path: '/' },
   { label: 'INCIDENT CENTER', path: '/incidents' },
-  { label: 'BLOCKCHAIN LOG', path: '/chain' },
   { label: 'CHAIN AUDIT', path: '/audit' },
 ]
 
